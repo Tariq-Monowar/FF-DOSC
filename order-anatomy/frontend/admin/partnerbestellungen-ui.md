@@ -25,7 +25,7 @@ One document, five lessons. Lessons 1–3 are the order list. Lesson 4 is partne
 
 The page has a **Bestellungen** card on the right (insight cards, revenue, AI search). It is sticky and about 320 px wide on large screens (`xl:w-80`).
 
-![Right sidebar: Umsatz card and Bestellungen insight list, open by default](ui/partnerbestellungen-right-sidebar.png)
+![Right sidebar: Umsatz card and Bestellungen insight list, open by default](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/admin/partnerbestellungen-right-sidebar.png)
 
 The header switch (“Bestellungen ausblenden” / “Bestellungen anzeigen”) remembers the choice. Until someone closes the panel, it stays **open**. A first visit therefore starts with less room for the list.
 
@@ -44,7 +44,7 @@ On a normal laptop (1,366–1,536 px) the list is no longer squeezed by the side
 
 This is the area today. View tabs on top, two filter rows under them, and — once orders are selected — the bulk-action row.
 
-![Filters, view tabs, and bulk actions on Partnerbestellungen](ui/partnerbestellungen-filters.png)
+![Filters, view tabs, and bulk actions on Partnerbestellungen](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/admin/partnerbestellungen-filters.png)
 
 ### What is wrong
 
@@ -116,7 +116,7 @@ Every filter that exists today, and all four bulk actions, stay available. They 
 
 ## 3. Order list
 
-![Order rows with partner, product, finance, status, and actions](ui/partnerbestellungen-orders.png)
+![Order rows with partner, product, finance, status, and actions](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/admin/partnerbestellungen-orders.png)
 
 ### What is wrong
 
@@ -181,7 +181,7 @@ This inbox is the support channel. A partner who waits here, or who gets two dif
 
 Today every person under the admin account opens the same inbox. The list is one row per order. The only filters are **Alle** and **Ungelesen**. Search covers messages, customers, and orders. Mentioning a Mitarbeiter with @ only drops their name into one message. It does not give them the conversation, and it does not hide it from anyone else. The header says **Partner ↔ Admin**. There is no owner on the partner and no owner on the thread.
 
-![Support inbox: one shared list of every partner order chat](ui/partnerbestellungen-support-inbox.png)
+![Support inbox: one shared list of every partner order chat](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/admin/partnerbestellungen-support-inbox.png)
 
 That holds while the team is small. It does not hold once many partners write at the same time.
 
@@ -250,11 +250,11 @@ The form on the partner side changes. A field is renamed, a new yes/no is added,
 
 **Empty values look like broken text.** Kunde and Modell on #10333 are empty. The screen does not say “not set”. It prints the characters stored in the source where an em dash should be, so the value reads as `ä€"`. The back link is the same kind of damage: the file contains a broken “Zurück”. An empty field and a missing field look like a data bug.
 
-![Übersicht for #10333: empty Kunde and Modell render as a broken dash](ui/partnerbestellungen-detail-uebersicht.png)
+![Übersicht for #10333: empty Kunde and Modell render as a broken dash](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/admin/partnerbestellungen-detail-uebersicht.png)
 
 **Finanzen is not finance.** That tab mounts the full order-detail view. For this category it prints “Halbprobenerstellung Details”: price, Kopfdaten, Leistentyp. Price, production cost, margin, and payment already sit in the Schnellübersicht on the right. The tab named Finanzen repeats the production form and does not show the invoice as the main content.
 
-![Finanzen tab showing production fields, raw key names, and a column of Nein](ui/partnerbestellungen-detail-finanzen.png)
+![Finanzen tab showing production fields, raw key names, and a column of Nein](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/admin/partnerbestellungen-detail-finanzen.png)
 
 **A new JSON key is shown as code.** Kopfdaten has a label map for `patient`, `auftraggeber`, and `leistenmaterial` only. Anything else is printed with `labelMap[key] || key`. On this order that is why `creationMode` and `modulation_by` appear as the raw names. There is no place that says “this key has no German label”. The next rename will either show another raw name or drop the old label with no trace.
 
