@@ -13,10 +13,9 @@ This is the page where the shop builds a custom shoe order for one customer, ste
 
 The main issue on this page is state management. Because of the many regular updates, the page often shows old or wrong data until it is reloaded, and the flow between the steps breaks. We need to improve the state management in the code first, and then the UI.
 
-**What we use now:** only React `useState` and `useEffect` inside one very large component (about 3,800 lines, 54 states). Data is refreshed with manual "refresh key" counters and URL parameters.
+**What we use now:** only React `useState` and `useEffect` inside one very large component.
 
-**What would be better:** TanStack Query for server data (cache per order, auto update after save) and Zustand for the page state (one store for the order). Both are already installed in the project, but this page does not use them.
-
+**What would be better:** TanStack Query for server data (cache per order, auto update after save) and Zustand for the page state (one store for the order).
 ## 1.1 Overview
 
 ![Clinical Assistant overview](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549138557-5hb07nd3-clinical-assistant-overview.png)
