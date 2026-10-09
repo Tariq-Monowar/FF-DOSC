@@ -1,12 +1,61 @@
-# custom-shafts
+﻿# Dashboard: order anatomy
 
-## 1. Catalogue page
+| Chapter | Topic                                | Route                                                   |
+| ------- | ------------------------------------ | ------------------------------------------------------- |
+| 1       | Clinical Assistant (Masschuhauftrag) | `/dashboard/scanning-data/[id]?form=clinical_assistant` |
+| 2       | Custom shafts                        | `/dashboard/custom-shafts`                              |
+
+---
+
+# Chapter 1: Clinical Assistant (Masschuhauftrag)
+
+This is the page where the shop builds a custom shoe order for one customer, step by step: Befund, Versorgungsplan, Leisten, Bettung, Schaft, Boden, Halbprobe, Auftrag and Abholung.
+
+The main issue on this page is state management. Because of the many regular updates, the page often shows old or wrong data until it is reloaded, and the flow between the steps breaks. We need to improve the state management in the code first, and then the UI.
+
+**What we use now:** only React `useState` and `useEffect` inside one very large component (about 3,800 lines, 54 states). Data is refreshed with manual "refresh key" counters and URL parameters.
+
+**What would be better:** TanStack Query for server data (cache per order, auto update after save) and Zustand for the page state (one store for the order). Both are already installed in the project, but this page does not use them.
+
+## 1.1 Overview
+
+![Clinical Assistant overview](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549138557-5hb07nd3-clinical-assistant-overview.png)
+
+The flow is good, but the customer header shows dashes instead of real data, and the two progress numbers do not match ("1 von 2" here, "0 von 4" in Konfiguratoren). There are also too many buttons, so the next step is not clear.
+
+## 1.2 Konfiguratoren
+
+![Konfiguratoren cards](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549139701-1wmon3ay-clinical-assistant-konfiguratoren.png)
+
+The cards are too small for the data they show (status, icons, employee, warnings, production type). We suggest a full-width list in the real workflow order: Leisten → Halbprobe → Schaft/Boden → Auftrag → Abholung.
+
+## 1.3 Leisten konfigurieren
+
+![Leisten konfigurieren](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549140701-h839jqwt-clinical-assistant-leisten-config.png)
+
+The UI here is fine. The work is in the code: we need better state management, so the data in the drawer always matches the order.
+
+## 1.4 Halbprobe and feedback
+
+![Halbprobe workspace](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549141879-u0jy1moz-clinical-assistant-halbprobe.png)
+
+We need to improve the UI of this modal, so the feedback is clearer and easier to read.
+
+## 1.5 State management
+
+The page does not handle state well. Draft data (by customer) and order data (by order) are loaded in two different ways, and the page often shows old data until reload. This is why the flow breaks after regular updates. We suggest one store for the order and letting the backend decide which steps are allowed.
+
+---
+
+# Chapter 2: Custom shafts
+
+## 2.1 Catalogue page
 
 ![Catalogue page](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/custom-shafts-page-1791540022134.png)
 
 The page is good: clear, easy to use, and everything the shop needs is on one screen.
 
-## 2. Popup: how production starts
+## 2.2 Popup: how production starts
 
 ![Popup step 1](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/custom-shafts-popup-step1-1791540023094.png)
 
@@ -16,7 +65,7 @@ With **Physischer Leisten** the popup keeps going and asks for the shipping of t
 
 In my opinion, this needs to be a bit easier.
 
-## 3. Order form
+## 2.3 Order form
 
 ![Order form: customer and 3D files](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/order-form-customer-1791543608443.png)
 
@@ -28,7 +77,7 @@ Shipping should also be managed from this page, not at the start. While **Show p
 
 This step can feel complicated for a normal partner. We suggest making it simpler.
 
-## 4. Balance page: activity
+## 2.4 Balance page: activity
 
 ![Balance page, activity list](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/balance-activity-1791541430640.png)
 
@@ -48,7 +97,7 @@ A shop can cancel an order only after it is sent ("Order received"). A draft has
 
 Personally, I do not like the design of this page. We need to improve its UI/UX.
 
-## 5. Database backup
+## 2.5 Database backup
 
 ```mermaid
 flowchart LR
