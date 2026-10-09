@@ -148,3 +148,11 @@ The page does not handle state well. Draft data (by customer) and order data (by
 - Confusing buttons: question "keep?", red button "No, delete".
 - Not shown on tab close or reload. If the check fails, the page just leaves.
 
+## 2.7 Klinische Denkstruktur: voice recording
+
+![Klinische Denkstruktur](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791552031805-ow7omyg4-clinical-assistant-voice.png)
+
+This section also needs to be improved. For **Gespräch aufnehmen** we use the free speech recognition that is built into the browser. It works well in Chrome and Edge, but not in every browser (for example Firefox), so some shops cannot use it.
+
+If we want voice to work in every browser, we need a better solution: record the audio in the browser and send it to a speech-to-text service on our server (for example OpenAI Whisper, Deepgram or Azure Speech). This works the same in all browsers, gives better results for German medical words, but it has a cost per minute.
+
