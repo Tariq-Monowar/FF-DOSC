@@ -1,6 +1,5 @@
 ﻿# custom-shafts
 
-<<<<<<< HEAD
 | Chapter | Topic                                | Route                                                   |
 | ------- | ------------------------------------ | ------------------------------------------------------- |
 | 1       | Clinical Assistant (Masschuhauftrag) | `/dashboard/scanning-data/[id]?form=clinical_assistant` |
@@ -50,15 +49,12 @@ The page does not handle state well. Draft data (by customer) and order data (by
 # Chapter 2: Custom shafts
 
 ## 2.1 Catalogue page
-=======
-## 1. Catalogue page
->>>>>>> 04c895fef243b168549cd1ac1dbab2d7bf1f4e5f
 
 ![Catalogue page](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/custom-shafts-page-1791540022134.png)
 
 The page is good: clear, easy to use, and everything the shop needs is on one screen.
 
-## 2. Popup: how production starts
+## 2.2 Popup: how production starts
 
 ![Popup step 1](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/custom-shafts-popup-step1-1791540023094.png)
 
@@ -68,7 +64,7 @@ With **Physischer Leisten** the popup keeps going and asks for the shipping of t
 
 In my opinion, this needs to be a bit easier.
 
-## 3. Order form
+## 2.3 Order form
 
 ![Order form: customer and 3D files](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/order-form-customer-1791543608443.png)
 
@@ -80,7 +76,7 @@ Shipping should also be managed from this page, not at the start. While **Show p
 
 This step can feel complicated for a normal partner. We suggest making it simpler.
 
-## 4. Balance page: activity
+## 2.4 Balance page: activity
 
 ![Balance page, activity list](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/balance-activity-1791541430640.png)
 
@@ -100,7 +96,7 @@ A shop can cancel an order only after it is sent ("Order received"). A draft has
 
 Personally, I do not like the design of this page. We need to improve its UI/UX.
 
-## 5. Database backup
+## 2.5 Database backup
 
 ```mermaid
 flowchart LR
@@ -124,7 +120,7 @@ image.png
 - The whole day's work is backed up once, at 03:00 at night. For example: a shop creates a draft order and deletes it one hour later. That order cannot be recovered, because it never reached a backup.
 - Data older than 60 days can no longer be restored.
 
-## 6. Clinical order page: Configurators
+## 2.6 Clinical order page: Configurators
 
 ![Clinical order, configurators](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-order-configurators-1791548823758.png)
 
@@ -143,7 +139,7 @@ image.png
 | 9   | Same for active parts: duplicate rows possible                                          | schema `active_components` (no `@@unique([shoe_order_id, catagory])`)                      |
 | 10  | Internal / External is saved in 2 tables that can disagree                              | `clinica_assistant_order_components.component_type` and `active_components.component_type` |
 
-### 6.1 "Entwurf gespeichert" popup
+### 2.6.1 "Entwurf gespeichert" popup
 
 ![Draft saved popup when leaving](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-order-leave-draft-popup-1791549476568.png)
 
