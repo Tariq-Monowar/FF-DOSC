@@ -47,6 +47,12 @@ Shipping should also be managed from this page, not at the start. While **Show p
 
 This step can feel complicated for a normal partner. We suggest making it simpler.
 
+In English, and in every language other than German, a dropdown does not open as a list. Every choice is drawn side by side inside the closed field. The shop cannot see one selected value. This is not only CAD modeling. Closure, leather, and the other fields on this form do the same.
+
+![Dropdown choices sit side by side in English](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/dropdown-options-side-by-side-1791783427771.jpg)
+
+A dropdown must show the one selected value. The other choices appear only when the field is opened, one under the other.
+
 ## 1.4 Balance page: activity
 
 ![Balance page, activity list](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/balance-activity-1791541430640.png)
