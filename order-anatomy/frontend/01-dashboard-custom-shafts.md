@@ -173,6 +173,19 @@ flowchart LR
 
 Do this before more UI work on the popup and the leather step. Once the order has one cache key, moving shipping onto the details page is a normal field change, not another set of URL parameters.
 
+## 1.7 Production number is not unique
+
+![Two order numbers become one production number](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/production-number-not-unique-1791781908727.svg)
+
+The production number is the shop prefix plus the last 3 digits of the order number (`buildProductionNumber`). The full order number is not kept.
+
+| Order number | Prefix AB |
+| --- | --- |
+| 10100 | AB100 |
+| 11100 | AB100 |
+
+Both end in `100`, so both become `AB100`. The same shop gets the same production number again every 1000 orders (`10000` and `11000` are both `AB000`). `production_number` has no unique rule, so two orders can share it. A search or a factory sheet can then open the wrong order.
+
 ---
 
 # Chapter 2: Clinical Assistant (Masschuhauftrag)
@@ -184,6 +197,7 @@ The main issue on this page is state management. Because of the many regular upd
 **What we use now:** only React `useState` and `useEffect` inside one very large component.
 
 **What would be better:** TanStack Query for server data (cache per order, auto update after save) and Zustand for the page state (one store for the order).
+
 ## 2.1 Overview
 
 ![Clinical Assistant overview](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549138557-5hb07nd3-clinical-assistant-overview.png)
@@ -216,6 +230,15 @@ The page does not handle state well. Draft data (by customer) and order data (by
 
 ![Clinical order, configurators](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-order-configurators-1791548823758.png)
 
+![One part saved three wrong ways](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-part-three-problems-1791781907956.svg)
+
+Section 2.6 already lists the main problems. These three are the ones that change what is saved:
+
+- The same part can be saved more than once. There is no rule “one last per order”, so a double click creates a second row. The page shows only one.
+- Internal and FeetF1rst are saved in two tables. One can say FeetF1rst makes it, the other can say the shop makes it.
+- Saving one part confirms the whole supply. The shop does not have to press the signature buttons.
+- The barcode link does not need a login. Whoever has the link can add a scan to that order. Anyone can write a scan there without proving who they are (`GET /v4/clinical_assistant/order_components/barcode-scan`).
+
 **Problems**
 
 | #   | Problem                                                                                 | Where                                                                                      |
@@ -230,6 +253,7 @@ The page does not handle state well. Draft data (by customer) and order data (by
 | 8   | No unique rule for one part per order, so a double click can create the same part twice | schema `clinica_assistant_order_components` (no `@@unique([shoe_order_id, catagory])`)     |
 | 9   | Same for active parts: duplicate rows possible                                          | schema `active_components` (no `@@unique([shoe_order_id, catagory])`)                      |
 | 10  | Internal / External is saved in 2 tables that can disagree                              | `clinica_assistant_order_components.component_type` and `active_components.component_type` |
+| 11  | The barcode link has no login, so anyone with the link can write a scan on that order  | `order_components.routes.ts` (`GET /barcode-scan`, no `verifyUser`)                        |
 
 ### 2.6.1 "Entwurf gespeichert" popup
 
@@ -247,4 +271,3 @@ The page does not handle state well. Draft data (by customer) and order data (by
 This section also needs to be improved. For **Gespräch aufnehmen** we use the free speech recognition that is built into the browser. It works well in Chrome and Edge, but not in every browser (for example Firefox), so some shops cannot use it.
 
 If we want voice to work in every browser, we need a better solution: record the audio in the browser and send it to a speech-to-text service on our server (for example OpenAI Whisper, Deepgram or Azure Speech). This works the same in all browsers, gives better results for German medical words, but it has a cost per minute.
-
