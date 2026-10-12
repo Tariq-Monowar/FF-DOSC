@@ -12,6 +12,9 @@ Two screens. Chapter 1 is the shop’s custom-shaft order. Chapter 2 is the clin
 | 1.6 | Production number. Two different orders can get the same number. |
 | 1.7 | Shared lists. Colour card, catalogue, soles, frames, days, holidays, shipping prices. These should come from Redis. |
 | 1.8 | Catalogue and order form. The same data is kept in too many places, so the screen shows old data. |
+| 1.9 | Leather on a catalogue product. Hard to open from the product list. The shop’s auto-fill does not show what will be copied. |
+| 1.10 | Zipper drawing. The shop marks the place, but chain type and colour are not on the screen and are not stored. |
+| 1.11 | Finish dialog. Switch between upper and floor. A 3D order must warn that the floor cannot be configured. |
 | 2.1 | Clinical overview. The header and the two progress numbers do not match. |
 | 2.2 | Konfiguratoren cards. Too small for the data on them. |
 | 2.3 | Leisten drawer. The layout is fine. The saved data can be stale. |
@@ -224,6 +227,58 @@ TanStack Query for server data. One cache key, shared by the catalogue, the deta
 Zustand for the form while the shop is typing. One object, not one `useState` per field. `localStorage` is only a backup if the tab closes. The URL keeps only the model id, the order id, and the customer id. Shipping and measurements stay on the order.
 
 Save draft or send order refreshes `custom-shaft-order`. Details, Boden, and Balance then read the same key. Do this before more UI work on the popup and the leather step.
+
+## 1.9 Leather on a catalogue product is hard to edit
+
+The admin product list and the leather map are two different pages. The shop never sees that map when it takes the catalogue finish.
+
+**Product list:** `/dashboard/upload-product`
+
+![Product list](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-ffc5a2e4-4489-4911-9674-fe80fb97f3d8-1791784633573.png)
+
+The list shows name, price, height, and gender. The pencil opens the whole product form at `/dashboard/add-products?id=...`. The leather map is buried inside that form.
+
+**Leather map:** Ledertyp, colour name, and the areas painted on the shoe picture.
+
+![Assign leather types on the shoe](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-5d852b13-cdf3-4bac-b7cf-1ccec665f207-1791784634511.png)
+
+There is no way to open this map from the product list. To change one area, the admin has to open the full product and find this step. The list should open this map, and the admin should edit it from there.
+
+**When the shop takes the catalogue finish**
+
+On the order form the shop presses **Ausführung wie im Katalog**. The dialog only asks if Material & Ausführung should be filled from the saved data. It does not show the leather types, the colours, or the areas.
+
+![Auto fill asks, but shows nothing](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-56eb84d2-057e-451f-a955-eb9298845844-1791784634884.png)
+
+The dialog should show what will be copied, so the shop sees what this product actually has before pressing OK. That is the same leather map from the admin product.
+
+## 1.10 The zipper screen does not ask for chain type or colour
+
+The zipper modal on the order form (`ZipperPlacementModal`). The shop picks a side and draws on the shoe.
+
+![Zipper position and a drawing](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-5fc79ff3-326a-4890-b46c-19f05be02840-1791784881452.png)
+
+What is saved today:
+
+| On the screen | Stored as |
+| --- | --- |
+| Inside, Outside, or Both sides | `zipper_position` |
+| The red drawing | `zipper_image` |
+| Extra zipper, yes or no, with a price | `zipper_extra` on the order JSON |
+
+Chain type and zipper colour are not on this screen. They are also not in the database. `maßschaft_kollektion` only has `is_zipper` (yes or no). `custom_shafts` only has `zipper_image`.
+
+A shoe zipper is ordered by chain type and colour, not only by where it sits. Chain type is coil or metal. Colour is the tape colour. Those two should be on this screen, next to the position, so the factory sees them with the drawing.
+
+## 1.11 After the upper is done, switch to the floor and back
+
+The dialog when the upper (Schaft) is finished (`ConfirmationModal`). It shows the customer, the product, **Further without a bottom**, and **Configure floor**.
+
+![Complete configuration](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-a18a3e9f-ac85-41d9-a579-68ec6a19dfd6-1791785129694.png)
+
+From here the shop should move between the upper and the floor in both directions. Upper to floor, and floor back to upper. Today **Configure floor** leaves the upper, and there is no matching way back.
+
+**A 3D order cannot configure the floor.** The green **Configure floor** button still looks like a normal next step. The block appears only after the click, as a second popup: “Bestellung nicht möglich.” The warning belongs on this dialog, before the click, and **Configure floor** should not look available. **Further without a bottom** stays the way to finish a 3D order.
 
 ---
 
