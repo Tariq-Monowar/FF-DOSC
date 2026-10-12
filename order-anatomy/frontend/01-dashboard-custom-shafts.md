@@ -2,29 +2,33 @@
 
 ## Contents
 
-| Section | Topic                                                                               |
-| ------- | ----------------------------------------------------------------------------------- |
-| 1.1     | Catalogue page                                                                      |
-| 1.2     | Start popup asks for shipping too early                                             |
+| Section | Topic                                                                                                       |
+| ------- | ----------------------------------------------------------------------------------------------------------- |
+| 1.1     | Catalogue page                                                                                              |
+| 1.2     | Start popup asks for shipping too early                                                                     |
 | 1.3     | Order form: customer name, user as a string on the order chain, Leisten or 3D, shipping, leather, dropdowns |
-| 1.4     | Balance activity list and drafts                                                    |
-| 1.5     | Nightly database backup                                                             |
-| 1.6     | Production number is not unique                                                     |
-| 1.7     | Shared catalogue lists should be served from Redis                                  |
-| 1.8     | Catalogue and order form show stale data                                            |
-| 1.9     | Leather configuration of a catalogue product                                        |
-| 1.10    | Zipper: no chain type or colour                                                     |
-| 1.11    | Moving between Schaft and Boden                                                     |
-| 1.12    | Security and data integrity (backend)                                               |
-| 2.1     | Overview: header and progress                                                       |
-| 2.2     | Konfiguratoren cards                                                                |
-| 2.3     | Leisten drawer                                                                      |
-| 2.4     | Halbprobe feedback                                                                  |
-| 2.5     | Page state                                                                          |
-| 2.6     | Saving a component                                                                  |
-| 2.6.1   | Leave-page popup deletes the whole supply                                           |
-| 2.7     | Voice recording                                                                     |
-| 2.8     | Security (backend)                                                                  |
+| 1.4     | Balance activity list and drafts                                                                            |
+| 1.5     | Nightly database backup                                                                                     |
+| 1.6     | Production number is not unique                                                                             |
+| 1.7     | Shared catalogue lists should be served from Redis                                                          |
+| 1.8     | Catalogue and order form show stale data                                                                    |
+| 1.9     | Leather configuration of a catalogue product                                                                |
+| 1.10    | Zipper: no chain type or colour                                                                             |
+| 1.11    | Moving between Schaft and Boden                                                                             |
+| 1.12    | Security and data integrity (backend)                                                                       |
+| 2.1     | Overview: header and progress                                                                               |
+| 2.2     | Konfiguratoren cards                                                                                        |
+| 2.3     | Leisten drawer                                                                                              |
+| 2.4     | Halbprobe feedback                                                                                          |
+| 2.5     | Page state                                                                                                  |
+| 2.6     | Saving a component                                                                                          |
+| 2.6.1   | Leave-page popup deletes the whole supply                                                                   |
+| 2.7     | Voice recording                                                                                             |
+| 2.8     | Security (backend)                                                                                          |
+| 3.1     | Kopfdaten keeps the first answer and drops the saved order                                                 |
+| 3.2     | Sprengung can send the short prefill                                                                        |
+| 3.3     | The price stays on the start price                                                                          |
+| 3.4     | One store for the form                                                                                      |
 
 ---
 
@@ -418,15 +422,15 @@ All paths are in `feetf1rst-crm-new`. No global login middleware runs before the
 
 These routes have no `verifyUser`, or have it commented out. They are not QR-code links, so they should require login.
 
-| Route                                                                                         | What it does                                                  | Code                                                       |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
-| `DELETE /v1/massschuhe-order/delete-all`                                                      | Deletes every Massschuh order of all partners and their files | `module/v1/massschuhe_order/massschuhe_order.routes.ts:87` |
-| `GET /v3/admin-order/get-all-orders`                                                          | Lists all `custom_shafts` orders of all partners              | `module/v3/admin_order/admin_order.routes.ts:18`           |
-| `GET`/`POST /v3/admin-order/get-child-list`                                                   | Returns child orders by id                                    | `admin_order.routes.ts:25`, `:32`                          |
-| `GET /v3/admin-order/get-all-partner`                                                         | Lists partner business names                                  | `admin_order.routes.ts:39`                                 |
-| `GET /v1/custom_shafts/treack/get-custom-shafts-status-history/:orderId`                      | Status history of one order (`verifyUser` commented out)      | `module/v1/admin_order/treack/treack.routes.ts:187–191`    |
-| `DELETE /v2/shoe-orders/remove-file/:fileId`                                                  | Deletes an order file and its S3 object (`verifyUser` commented out) | `module/v2/shoe_orders/shoe_orders.routes.ts:187–191` |
-| `DELETE /v1/custom_shafts/feedback/feedback-images/delete`                                    | Deletes feedback images                                       | `module/v1/admin_order/feedback/feedback_images/feedback_images.routes.ts:29` |
+| Route                                                                    | What it does                                                         | Code                                                                          |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `DELETE /v1/massschuhe-order/delete-all`                                 | Deletes every Massschuh order of all partners and their files        | `module/v1/massschuhe_order/massschuhe_order.routes.ts:87`                    |
+| `GET /v3/admin-order/get-all-orders`                                     | Lists all `custom_shafts` orders of all partners                     | `module/v3/admin_order/admin_order.routes.ts:18`                              |
+| `GET`/`POST /v3/admin-order/get-child-list`                              | Returns child orders by id                                           | `admin_order.routes.ts:25`, `:32`                                             |
+| `GET /v3/admin-order/get-all-partner`                                    | Lists partner business names                                         | `admin_order.routes.ts:39`                                                    |
+| `GET /v1/custom_shafts/treack/get-custom-shafts-status-history/:orderId` | Status history of one order (`verifyUser` commented out)             | `module/v1/admin_order/treack/treack.routes.ts:187–191`                       |
+| `DELETE /v2/shoe-orders/remove-file/:fileId`                             | Deletes an order file and its S3 object (`verifyUser` commented out) | `module/v2/shoe_orders/shoe_orders.routes.ts:187–191`                         |
+| `DELETE /v1/custom_shafts/feedback/feedback-images/delete`               | Deletes feedback images                                              | `module/v1/admin_order/feedback/feedback_images/feedback_images.routes.ts:29` |
 
 These routes are public on purpose, because a phone opens them from a QR code: Halbprobe images (`module/v2/shoe_orders/halbprobe_images/halbprobe_images.routes.ts:17`, `:24`), feedback image upload and list (`feedback_images.routes.ts:18–22`, `:36`), and the barcode and production-sheet links (2.8). On them the order id is the only key. A signed token with an expiry date in the QR link would be safer than the plain id.
 
@@ -434,14 +438,14 @@ These routes are public on purpose, because a phone opens them from a QR code: H
 
 These routes require login, but the handler loads the order by id only. It never checks that `partnerId` belongs to the logged-in user, so any partner can read or change another partner's order if they know the id.
 
-| Route                                                  | Handler and code                                                                                                    | Effect                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `GET /v1/custom_shafts/get/:id`                        | `getSingleCustomShaft`, `custom_shafts.controllers.ts:5115` (`findUnique({ where: { id } })` at `:5128`)            | Reads the order with customer name, email, phone               |
-| `GET /v1/custom_shafts/treack/get-custom-shafts/:partnerId` | `getCustomShaftsByPartnerId`, `treack/treack.controllers.ts:580` (filters by the `partnerId` from the URL, `:605`) | Lists another partner's orders                                 |
-| `PATCH /v1/custom_shafts/update-status/:id`            | `updateCustomShaftStatus`, `custom_shafts.controllers.ts:5418` (`findUnique` at `:5486`)                            | Changes `status`, `last_status`, `order_status`                |
-| `PATCH /v1/custom_shafts/update-payment-status`        | `updatePaymentStatus`, `custom_shafts.controllers.ts:6522` (`findMany({ where: { id: { in } } })` at `:6550`)        | Sets Paid / Unpaid on any order                                |
-| `PATCH /v1/custom_shafts/update-admin-order/:id`       | `updateAdminOrder`, `custom_shafts.controllers.ts:7606` (`findUnique` at `:7751`)                                   | Changes `production_number`, production and shipping cost      |
-| `DELETE /v1/custom_shafts/delete/:id`                  | `deleteCustomShaft`, `custom_shafts.controllers.ts:6675`                                                            | Deletes the order and its children                             |
+| Route                                                       | Handler and code                                                                                                   | Effect                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `GET /v1/custom_shafts/get/:id`                             | `getSingleCustomShaft`, `custom_shafts.controllers.ts:5115` (`findUnique({ where: { id } })` at `:5128`)           | Reads the order with customer name, email, phone          |
+| `GET /v1/custom_shafts/treack/get-custom-shafts/:partnerId` | `getCustomShaftsByPartnerId`, `treack/treack.controllers.ts:580` (filters by the `partnerId` from the URL, `:605`) | Lists another partner's orders                            |
+| `PATCH /v1/custom_shafts/update-status/:id`                 | `updateCustomShaftStatus`, `custom_shafts.controllers.ts:5418` (`findUnique` at `:5486`)                           | Changes `status`, `last_status`, `order_status`           |
+| `PATCH /v1/custom_shafts/update-payment-status`             | `updatePaymentStatus`, `custom_shafts.controllers.ts:6522` (`findMany({ where: { id: { in } } })` at `:6550`)      | Sets Paid / Unpaid on any order                           |
+| `PATCH /v1/custom_shafts/update-admin-order/:id`            | `updateAdminOrder`, `custom_shafts.controllers.ts:7606` (`findUnique` at `:7751`)                                  | Changes `production_number`, production and shipping cost |
+| `DELETE /v1/custom_shafts/delete/:id`                       | `deleteCustomShaft`, `custom_shafts.controllers.ts:6675`                                                           | Deletes the order and its children                        |
 
 The routes are in `module/v1/admin_order/custom_shafts.routes.ts:210–212`, `:221–223`, `:254–256`, `:265–267`, `:330–332`. All of them allow `PARTNER`, `ADMIN`, and `EMPLOYEE`.
 
@@ -604,7 +608,7 @@ Record the audio in the browser and send it to a speech-to-text service on the s
 
 ## 2.8 Security (backend)
 
-**The order is not checked against the user.** Both handlers load the `shoe_order` by id only and never check `partnerId`, so a partner can read or write the components of another partner's supply. Other handlers in the same module already filter by `partnerId` (`changeComponentType`, `deleteOrderComponent`, `deleteOrder`).
+**The order is not checked against the user.** Both handlers load the `shoe_order` by id only and never check `partnerId`. Other handlers in the same module already filter by `partnerId` (`changeComponentType`, `deleteOrderComponent`, `deleteOrder`).
 
 - `createOrderComponents`, `module/v4/clinical_assistant/order_components/order_components.controllers.ts:1030` (`shoe_order.findUnique({ where: { id } })` at `:1163`)
 - `getOrderComponents`, `order_components.controllers.ts:1993` (`findFirst({ where: { shoe_order_id, catagory } })` at `:2026`)
@@ -617,3 +621,95 @@ Record the audio in the browser and send it to a speech-to-text service on the s
 **Expected behaviour**
 
 Add `partnerId: req.user.id` to both lookups. The QR links get a signed token with an expiry date instead of the plain order id.
+
+---
+
+# Chapter 3: Leistenkonfigurator
+
+Route: `/dashboard/leistenkonfigurator`
+
+The screen is clear. The form does not have one place for its data, so a saved order does not show up first, and the price and the submit can read a different copy than the screen. The same stale-data problem is on the catalogue (1.8) and in Clinical Assistant (2.5).
+
+**Code**
+
+- Partner dashboard: `app/(dashboard)/dashboard/leistenkonfigurator/page.tsx`
+
+## 3.1 Kopfdaten keeps the first answer and drops the saved order
+
+![Kopfdaten](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791785968344-1mwqvw4r-leistenkonfigurator-kopfdaten.png)
+
+**Current behaviour**
+
+Two loads both fill the patient and the files:
+
+- `loadPrefillData` calls `getLeistenkonfiguratorData(orderId, customerId)` and sets only the patient name.
+- `loadHalbprobenerstellungPrefill` calls `getMassschuheOrder(customShaftsId)` and sets the patient, the STL files, the PDF, and the Leistenmaterial.
+
+`kopfdaten.tsx` copies `initialData` once (`initialHydratedRef`). The first answer is kept. The full order that arrives second is dropped, so Patient and the 3D files stay empty even though `getMassschuheOrder` already returned them.
+
+**Expected behaviour**
+
+When `customShaftsId` is in the URL, only `['leisten-order', customShaftsId]` runs. The form waits for that answer, then sets Patient, Holzleisten / Plastikleisten, and the file URLs from it. `loadPrefillData` does not run beside it.
+
+When there is no `customShaftsId`, the short prefill uses `['leisten-prefill', orderId, customerId]`.
+
+## 3.2 Sprengung can send the short prefill
+
+![Sprengung and Modellierung](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791785969880-s0qknx7u-leistenkonfigurator-sprengung.png)
+
+**Current behaviour**
+
+The numbers live in the child's own `useState`. The parent never holds them. `sprengung-spitzenzugabe.tsx` applies `initialData` once (`hydratedRef`), then ignores later answers.
+
+`loadHalbprobenerstellungPrefill` writes that data with `setInitialSprengung`. `getHalbprobenerstellungJson` and `buildFormData` do not read this state. They call `sprengungRef.current.getData()` when the user presses Weiter. If the hydrate already locked onto the short prefill, Weiter sends those short values, not the saved Halbprobe JSON.
+
+**Expected behaviour**
+
+Sprengung is the field `sprengungSpitzenzugabe` on the same order as 3.1. It is not a second request. Weiter reads that saved value.
+
+## 3.3 The price stays on the start price
+
+![Leistentyp and form](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791785971140-se6g6ir4-leistenkonfigurator-leistentyp.png)
+
+**Current behaviour**
+
+The price is not stored with the form. `handlePriceUpdate` recalculates it by reading `kopfdatenRef` and `leistentypRef`, and only when Leistenmaterial or Leistentyp fires `onChange` (`handleLeistentypChange`).
+
+After `loadHalbprobenerstellungPrefill` sets `initialLeistentyp`, nothing calls `handlePriceUpdate`. The button stays on the start price (199,99 €) until the user clicks a last type. `getHalbprobenerstellungJson` then saves that price into `Halbprobenerstellung_json`.
+
+**Expected behaviour**
+
+Leistentyp and Formkonfiguration are `leistentyp` and `allgemeineOptionen` on the same order. When that order is written into the form, the price is calculated once from it, not from a later click.
+
+Other orders for this customer stay a separate query: `['sync-orders', customerId, 'Leistenerstellung']` (`getSynchronousOrders` on the page).
+
+## 3.4 One store for the form
+
+**Current behaviour**
+
+| What happens now | Function |
+| --- | --- |
+| Two loaders, and the first one wins | `loadPrefillData`, `loadHalbprobenerstellungPrefill` |
+| Each section copies the data once and then ignores the server | hydrate effect in `kopfdaten.tsx`, `sprengung-spitzenzugabe.tsx`, `leistentyp.tsx` |
+| The price and the submit read refs, not the form the user sees | `handlePriceUpdate`, `getHalbprobenerstellungJson`, `buildFormData`, `validateForm` |
+
+**Recommended approach**
+
+The same approach as 1.8 and 2.5. TanStack Query holds the server order. Zustand holds the form while the user is typing: Kopfdaten, Sprengung, Leistentyp, `allgemeineOptionen`, and the price.
+
+| Data | Query key |
+| --- | --- |
+| The saved order | `['leisten-order', customShaftsId]` |
+| The short prefill, when there is no `customShaftsId` | `['leisten-prefill', orderId, customerId]` |
+| Other Leistenerstellung orders for this customer | `['sync-orders', customerId, 'Leistenerstellung']` |
+
+One query result is written into that store. The price and the submit read the store. After `createLeistenkonfigurator` in `handleCompletionConfirm`, invalidate `['leisten-order', customShaftsId]`, so the next open shows what was saved.
+
+```mermaid
+flowchart LR
+    Q["leisten-order"] --> Store["Zustand form"]
+    Store --> Kopf["Kopfdaten"]
+    Store --> Spr["Sprengung"]
+    Store --> Typ["Leistentyp and price"]
+    Save["handleCompletionConfirm"] -->|"invalidate leisten-order"| Q
+```
