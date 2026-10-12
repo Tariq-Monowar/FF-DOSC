@@ -1,28 +1,30 @@
-﻿# custom-shafts
+# Maßschäfte
 
-Two screens. Chapter 1 is the shop’s custom-shaft order. Chapter 2 is the clinical shoe order (Massschuhauftrag).
+## Contents
 
-| Section | What is in it |
-| ------- | ------------- |
-| 1.1 | Catalogue page. The screen itself is fine. How the list is loaded is in 1.8. |
-| 1.2 | Start popup. A physical last asks for shipping before the order form opens. |
-| 1.3 | Order form. Customer name, child orders, last or 3D, shipping, leather, and dropdowns. |
-| 1.4 | Balance activity. The list was built for money, and a draft cannot be deleted. |
-| 1.5 | Nightly database backup. What it saves, and what it misses. |
-| 1.6 | Production number. Two different orders can get the same number. |
-| 1.7 | Shared lists. Colour card, catalogue, soles, frames, days, holidays, shipping prices. These should come from Redis. |
-| 1.8 | Catalogue and order form. The same data is kept in too many places, so the screen shows old data. |
-| 1.9 | Leather on a catalogue product. Hard to open from the product list. The shop’s auto-fill does not show what will be copied. |
-| 1.10 | Zipper drawing. The shop marks the place, but chain type and colour are not on the screen and are not stored. |
-| 1.11 | Finish dialog. Switch between upper and floor. A 3D order must warn that the floor cannot be configured. |
-| 2.1 | Clinical overview. The header and the two progress numbers do not match. |
-| 2.2 | Konfiguratoren cards. Too small for the data on them. |
-| 2.3 | Leisten drawer. The layout is fine. The saved data can be stale. |
-| 2.4 | Halbprobe modal. The feedback is hard to read. |
-| 2.5 | Page state. Old data stays on screen until reload. |
-| 2.6 | Saving a part. Duplicates, two tables that disagree, whole order confirmed, barcode with no login. |
-| 2.6.1 | Leaving the page. “No, delete” removes the whole supply. |
-| 2.7 | Voice recording. Browser speech works in Chrome and Edge only. |
+| Section | Topic                                                                               |
+| ------- | ----------------------------------------------------------------------------------- |
+| 1.1     | Catalogue page                                                                      |
+| 1.2     | Start popup asks for shipping too early                                             |
+| 1.3     | Order form: customer name, user as a string on the order chain, Leisten or 3D, shipping, leather, dropdowns |
+| 1.4     | Balance activity list and drafts                                                    |
+| 1.5     | Nightly database backup                                                             |
+| 1.6     | Production number is not unique                                                     |
+| 1.7     | Shared catalogue lists should be served from Redis                                  |
+| 1.8     | Catalogue and order form show stale data                                            |
+| 1.9     | Leather configuration of a catalogue product                                        |
+| 1.10    | Zipper: no chain type or colour                                                     |
+| 1.11    | Moving between Schaft and Boden                                                     |
+| 1.12    | Security and data integrity (backend)                                               |
+| 2.1     | Overview: header and progress                                                       |
+| 2.2     | Konfiguratoren cards                                                                |
+| 2.3     | Leisten drawer                                                                      |
+| 2.4     | Halbprobe feedback                                                                  |
+| 2.5     | Page state                                                                          |
+| 2.6     | Saving a component                                                                  |
+| 2.6.1   | Leave-page popup deletes the whole supply                                           |
+| 2.7     | Voice recording                                                                     |
+| 2.8     | Security (backend)                                                                  |
 
 ---
 
@@ -32,345 +34,559 @@ Route: `/dashboard/custom-shafts`
 
 ## 1.1 Catalogue page
 
-The shoe catalogue screen looks fine. How the list is loaded is in 1.8.
-
 ![Catalogue page](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/custom-shafts-page-1791540022134.png)
 
-The page is good: clear, easy to use, and everything the shop needs is on one screen.
+The page is clear and easy to use. Everything the user needs is on one screen. How the list is loaded is covered in 1.8.
 
 ## 1.2 Start popup asks for shipping too early
 
-The first popup, before the order form. It should only ask how production starts.
+The first popup decides how production starts.
 
 ![Popup step 1](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/custom-shafts-popup-step1-1791540023094.png)
 
-With **3D-Modell hochladen** the popup is easy: one click and the order form opens.
+**Current behaviour**
 
-With **Physischer Leisten** the popup keeps going and asks for the shipping of the last (combined shipment, label, pickup, date, address) before the shop even sees the order. This is the wrong place. The shipping choice should move into the order page itself, for example as a sidebar, so the popup only asks how production starts.
+- **3D-Modell hochladen**: one click, and the order form opens.
+- **Physischer Leisten**: the popup continues and asks for the shipping of the last (combined shipment, label, pickup, date, address) before the user has seen the order.
 
-In my opinion, this needs to be a bit easier.
+**Expected behaviour**
+
+The popup only asks how production starts. Shipping moves into the order form, for example as a sidebar (see 1.3.4).
+
+**Code**
+
+- Partner dashboard: `components/CustomShafts/NewSchaftErstellungModal.tsx`
 
 ## 1.3 Order form
 
-The form after the popup. Six separate points. Each one has its own heading below.
+Route: `/dashboard/custom-shafts/details/[id]`. Six separate points.
 
-### 1.3.1 The customer box shows an id
+### 1.3.1 The customer box shows an id instead of a name
 
 ![Order form: customer and 3D files](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/order-form-customer-1791543608443.png)
 
 ![Customer box shows the id, not a name](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-c97a0072-ecaa-4cb2-a831-74e79f5d36fd-1791783045340.png)
 
-The customer box shows the id (`cmr0na6ef000bdzvwcd1vpbnl`), not a person. A name is required. If there is no name, show the address. The id stays in the database and is not shown in the box.
+**Current behaviour**
 
-The customer is stored as first name (`vorname`) and last name (`nachname`). One **name** field is enough. The shop types one name.
+The box shows the customer id (`cmr0na6ef000bdzvwcd1vpbnl`). When no name is passed, the form uses the id as the display name.
 
-### 1.3.2 A follow-up order must reuse the customer
+**Expected behaviour**
 
-When there is no real customer, the next order in the chain must not ask for a customer id or a name again. Halbprobe, then Massschuh, then Boden. Each child order uses the previous order’s answer.
+- A name is required. If there is no name, the box shows the address. The id is never shown.
+- The customer is stored as `vorname` and `nachname`. One **name** field is enough, and the user types one name. The id stays in the database.
+
+**Code**
+
+- Partner dashboard: `app/(dashboard)/dashboard/custom-shafts/details/[id]/page.tsx:626` (`name: urlName || urlId`) and `:737` (`name: fallbackName || id`)
+- Backend: `prisma/customer.schma.prisma:16–17` (`vorname`, `nachname`, both optional)
+
+### 1.3.2 The user on the order chain is a string
 
 ![No real customer: empty search and an external customer field](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-1e2a41de-227c-4553-a9c0-5a480304834c-1791783113156.png)
 
-### 1.3.3 Physical last or 3D cannot be changed here
+Halbprobenerstellung, then Massschafterstellung, then Bodenkonstruktion are one chain. They are linked by the internal parent relation `parent_custom_shafts_id`.
 
-The choice "physical last or 3D" is made in the popup and cannot be changed on this page. If the shop changes its mind, it has to go back and start again. We suggest letting the shop switch between physical last and 3D directly on this page.
+**Current behaviour**
 
-### 1.3.4 Shipping belongs on this page
+The person is a foreign key `customerId` to `customers.id`. A name that is not a registered customer is stored separately as `other_customer_name` and `customerName`.
 
-Shipping should be managed from this page, not in the start popup. While **Show prices** is off (during the customer consultation), the shipping part stays hidden. The shop can open the order again later and edit the shipping there.
+**Expected behaviour**
+
+The user on this chain is one string. That string is the name, and it belongs to the order through the parent relation, so Massschafterstellung and Bodenkonstruktion read the same user string from the parent order.
+
+**Code**
+
+- Backend: `prisma/admin-order.schma.prisma:104` (`customerId`) and `:140` (`customer` relation to `customers`)
+- Backend: `prisma/admin-order.schma.prisma:102` (`other_customer_name`), `:132` (`customerName`)
+- Backend: `prisma/admin-order.schma.prisma:177–179` (`parent_custom_shafts_id`, `child_custom_shafts`)
+
+### 1.3.3 Leisten or 3D cannot be changed on the form
+
+**Current behaviour**
+
+The choice between a physical last and a 3D upload is made in the start popup. To change it, the user has to go back and start again.
+
+**Suggestion**
+
+Let the user switch between physical last and 3D directly on the order form.
+
+**Code**
+
+- Partner dashboard: `details/[id]/page.tsx:277` (`isFrom3DUpload = source === '3dupload'`, read from the URL)
+
+### 1.3.4 Shipping belongs on the order form
+
+**Expected behaviour**
+
+Shipping is managed on the order form, not in the start popup. While **Show prices** is off (during the customer consultation), the shipping part stays hidden. The user can open the order later and edit the shipping there.
 
 ### 1.3.5 Leather areas are hard to fill
 
 ![Assign leather types to shoe areas](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/order-form-leather-1791543609389.png)
 
-This step can feel complicated for a normal partner. We suggest making it simpler.
+This step can feel complicated for a normal partner. It should be simpler.
 
-### 1.3.6 In English, a dropdown shows every choice at once
+**Code**
 
-In English, and in every language other than German, a dropdown does not open as a list. Every choice is drawn side by side inside the closed field. The shop cannot see one selected value. This is not only CAD modeling. Closure, leather, and the other fields on this form do the same.
+- Partner dashboard: `components/CustomShafts/LeatherColorSectionModal/index.tsx`
+
+### 1.3.6 In English, a dropdown shows every option at once
 
 ![Dropdown choices sit side by side in English](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/dropdown-options-side-by-side-1791783427771.jpg)
 
-A dropdown must show the one selected value. The other choices appear only when the field is opened, one under the other.
+**Current behaviour**
+
+In English, and in every language other than German, a dropdown does not open as a list. All options are drawn side by side inside the closed field, so no single selected value is visible. This affects CAD-Modellierung, Verschluss, leather, and the other dropdowns on this form.
+
+**Expected behaviour**
+
+A closed dropdown shows the one selected value. The other options appear only when it is opened, one below the other.
 
 ## 1.4 Balance activity list
 
-The activity page. It tracks orders, but the logic was written for transactions.
-
 ![Balance page, activity list](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/balance-activity-1791541430640.png)
 
-The page itself is fine. We suggest rebuilding the logic around the order:
+The page works. Its logic was built for transactions, and today it is used to track orders.
+
+**Suggestion**
+
+Rebuild the logic around the order:
 
 - Clicking an order opens its details.
-- The shop can edit an order until the admin confirms it.
+- The user can edit an order until the admin confirms it.
 - Shipping is managed in a sidebar: cancel a FedEx label, add or remove a shipment group.
 
-These changes can be added easily.
+These changes are small. The page design also needs a UI/UX review.
 
-Personally, I do not like the design of this page. We need to improve its UI/UX.
+**Code**
+
+- Partner dashboard: `app/(dashboard)/dashboard/_components/FeetF1rstBalance/AktivitatTable.tsx`
 
 ### 1.4.1 A draft cannot be deleted
 
 ![Draft order in the activity list](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/activity-draft-row-1791543383089.png)
 
-A shop can cancel an order only after it is sent ("Order received"). A draft has no delete option, so drafts the shop does not need stay in the list. We suggest letting the shop delete its own drafts, and restore them later if needed, the same way the admin can restore orders from the Trash.
+**Current behaviour**
+
+An order can be cancelled only after it is sent ("Order received"). A draft has no delete option, so unused drafts stay in the list.
+
+**Suggestion**
+
+Let the user delete their own drafts and restore them later, the same way the admin restores orders from the Trash.
 
 ## 1.5 The database is backed up once a night
 
-A full copy of the live database. One dump at 03:00. The last 60 copies are kept.
-
 ```mermaid
 flowchart LR
-    DB[("Live database<br/>all shops")] -->|"every night 03:00<br/>pg_dump"| S3[("S3 storage<br/>last 60 backups")]
+    DB[("Live database<br/>all partners")] -->|"once a night<br/>pg_dump"| S3[("S3 storage<br/>last 60 backups")]
     S3 -->|"restore<br/>(whole database)"| DB
-    UI["Partner Dashboard<br/>/dashboard/backup"] -.->|"manual backup<br/>or restore"| S3
+    UI["Partner dashboard<br/>/dashboard/backup"] -.->|"manual backup<br/>or restore"| S3
 ```
 
-| | |
-| --- | --- |
-| When | Every day at 03:00 morning in Germany time |
-| How | `pg_dump` of the whole database, uploaded to S3 |
-| Kept | The last 60 backups (about 2 months) |
-| Manual backup and restore | Partner Dashboard, `/dashboard/backup`. A restore first takes a safety snapshot, then replaces the live database. |
+|                           |                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| When                      | Daily, `0 7 * * *` in `Asia/Dhaka`. That is 03:00 in Germany in summer and 02:00 in winter.                       |
+| How                       | `pg_dump` of the whole database, uploaded to S3                                                                   |
+| Kept                      | The last 60 backups (about two months)                                                                            |
+| Manual backup and restore | Partner dashboard, `/dashboard/backup`. A restore first takes a safety snapshot, then replaces the live database. |
 
-**What can go wrong**
+**Risks**
 
-- If a backup fails, there is no notification. Nobody learns about it.
-- The whole day's work is backed up once, at 03:00 at night. For example: a shop creates a draft order and deletes it one hour later. That order cannot be recovered, because it never reached a backup.
-- Data older than 60 days can no longer be restored.
+- A failed backup is only written to the server log. Nobody is notified.
+- The day's work is saved once, at night. A draft created and deleted on the same day never reaches a backup and cannot be recovered.
+- Data older than 60 backups can no longer be restored.
+- Every partner account can start a restore. The restore drops the whole `public` schema, so one partner's restore resets the data of all partners. Restore should be admin-only.
 
-## 1.6 Two orders can share one production number
+**Code**
 
-The factory number is not the full order number. It is the shop prefix plus the last 3 digits.
+- Backend: `cron/database_backup.ts:14` (`KEEP_LAST_BACKUPS = 60`), `:134` (`pg_dump`), `:217–226` (schedule and timezone), `:24` (`logErr`, console only)
+- Backend: `module/v2/backup/restore.service.ts:168` (safety snapshot before a restore), `:198` (`DROP SCHEMA IF EXISTS public CASCADE`)
+- Backend: `module/v2/backup/backup.routes.ts:63–64` (`POST /:id/restore`, `verifyUser("PARTNER")`)
+
+## 1.6 Production number is not unique
 
 ![Two order numbers become one production number](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/production-number-not-unique-1791781908727.svg)
 
-The production number is the shop prefix plus the last 3 digits of the order number (`buildProductionNumber`). The full order number is not kept.
+**Current behaviour**
 
-| Order number | Prefix AB |
-| ------------ | --------- |
-| 10100        | AB100     |
-| 11100        | AB100     |
+The production number is the partner prefix plus the last three digits of the order number. The full order number is not kept.
 
-Both end in `100`, so both become `AB100`. The same shop gets the same production number again every 1000 orders (`10000` and `11000` are both `AB000`). `production_number` has no unique rule, so two orders can share it. A search or a factory sheet can then open the wrong order.
+| Order number | Production number (prefix AB) |
+| ------------ | ----------------------------- |
+| 10100        | AB100                         |
+| 11100        | AB100                         |
 
-## 1.7 Shared lists should come from Redis
+Both end in `100`, so both become `AB100`. The same partner gets a repeated production number every 1000 orders (`10000` and `11000` are both `AB000`). The column has no unique rule, so two orders can share one number, and a search or a factory sheet can open the wrong order.
 
-Lists that are the same for every shop. The colour card is one of them. Opening it searches the database today.
+**Code**
+
+- Backend: `module/v2/admin_order_transitions/admin_order_transitions.controllers.ts:61–74` (`buildProductionNumber`, `digits.slice(-3).padStart(3, "0")`). The comment above it already says "Not unique".
+- Backend: `prisma/admin-order.schma.prisma:270` (`production_number String?`, no `@unique`)
+
+## 1.7 Shared catalogue lists should be served from Redis
 
 ![Digital color card](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-efa55718-f65f-4289-bebf-b44d30481ac8-1791783922217.png)
 
-The color card is the same list for every shop. It should come from Redis. The database is only for when an admin adds or changes a color.
+**Current behaviour**
 
-These tables are the same kind. They do not change per order.
+The Digitale Farbkarte is the same list for every partner. Each time it opens, the backend reads it from the database. The lists below work the same way. None of them changes per order.
 
-| What the shop sees | Table |
-| --- | --- |
-| Color card | `leather_type`, `Leather_color` (in `reference-shoe.schma.prisma`) |
-| Shoe catalogue | `maßschaft_kollektion` |
-| Sole list | `sole_item` |
-| Frame list | `frame_item` |
-| Working days and production cost | `custom_shafts_delivery_dates` |
-| Holidays | `holyday_and_vacation` |
-| Shipping prices | `shipping_pricing` |
+| What the user sees               | Table                                                                                  | Read by                                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Digitale Farbkarte               | `digital_color_category`, `digital_color` (`prisma/settings.schma.prisma:236`, `:245`) | `module/v3/digital_color/digital_color.controllers.ts:70`, `:326`                      |
+| Shoe catalogue                   | `maßschaft_kollektion` (`prisma/admin-order.schma.prisma:11`)                          | `module/v1/admin_order/custom_shafts.controllers.ts:596` (`getAllMaßschaftKollektion`) |
+| Soles                            | `sole_item` (`admin-order.schma.prisma:1050`)                                          | `module/v1/admin_order/sole_catalogue/sole_catalogue.controllers.ts:410`               |
+| Frames                           | `frame_item` (`admin-order.schma.prisma:1106`)                                         | `module/v1/admin_order/frame_catalogue/frame_catalogue.controllers.ts:351`             |
+| Working days and production cost | `custom_shafts_delivery_dates` (`admin-order.schma.prisma:617`)                        | `module/v1/admin_order/delivery_dates/delivery_dates.controllers.ts:123`               |
+| Holidays                         | `holyday_and_vacation` (`admin-order.schma.prisma:628`)                                | `delivery_dates.controllers.ts:490`                                                    |
+| Shipping prices                  | `shipping_pricing` (`admin-order.schma.prisma:696`)                                    | `module/v3/admin_order/shipping_pricing/shipping_pricing.controllers.ts:91`            |
 
-Orders stay on the database: `custom_shafts`, files, status history, feedback, invoices, shipping, chat, and `custom_models`. A shop’s own favourites stay there too.
+**Expected behaviour**
 
-When an admin edits one of these lists, the backend saves the database and refreshes that Redis key. The shop screen reads Redis only.
+These lists are served from Redis. The database is written only when an admin adds or changes an entry, and that write refreshes the Redis key. The backend already has a Redis client (`config/redis.config.ts`).
 
-## 1.8 Catalogue and order form show old data
+Order data stays in the database: `custom_shafts`, its files, status history, feedback, invoices, shipping, chat, and `custom_models`. Per-partner data stays there too: favourites (`maßschaft_kollektion_favorite`) and access limits (`maßschaft_kollektion_reduse_access`).
+
+## 1.8 Catalogue and order form show stale data
 
 Routes: `/dashboard/custom-shafts` and `/dashboard/custom-shafts/details/[id]`.
 
-The screens work. The same list and the same order are loaded in more than one place, so a filter, a reload, or a save can show old data until the page is opened again. This is the same kind of problem as Clinical Assistant (2.5).
+The screens work, but the same list and the same order are kept in several places. A filter change, a reload, or a save can show old data until the page is opened again. Clinical Assistant has the same problem (2.5).
 
-**Catalogue** (`custom-shafts/page.tsx`)
+**Catalogue** (`app/(dashboard)/dashboard/custom-shafts/page.tsx`)
 
-`useCustomShafts` fetches inside `useEffect` and keeps the answer in `useState`. The page copies that answer into a second list, `allFetchedItems`, and filters it again. The API already filtered it.
+- `useCustomShafts` fetches inside `useEffect` and keeps the result in `useState` (`hooks/customShafts/useCustomShafts.ts:42–80`).
+- The page copies the result into a second list, `allFetchedItems` (`page.tsx:110–122`), and filters it again. The API has already filtered it.
+- **Mehr anzeigen** and a notification deep link do not request the model they need. They increase `currentPage` until it appears (`page.tsx:124–154`).
+- A change of gender, category, or search clears the list and starts again at page 1 (`page.tsx:156–163`).
 
-**Mehr anzeigen**, and a notification that should open one model, do not ask for that model. They raise `currentPage` until the model appears. A change of gender, category, or search clears the list and starts again at page 1.
-
-**Order form** (`custom-shafts/details/[id]/page.tsx`)
+**Order form** (`app/(dashboard)/dashboard/custom-shafts/details/[id]/page.tsx`, 4027 lines)
 
 Each field is its own `useState`. The same order is also kept in three other places:
 
-| Place | What it keeps |
-| --- | --- |
-| URL | customer, draft flag, and every shipping field |
-| `localStorage` / `sessionStorage` | the form draft (`customShaftsOrderFlowDraftStorage`) |
-| `CustomShaftDataContext` | a third copy, passed on to Bodenkonstruktion |
+| Place                             | What it keeps                                                       |
+| --------------------------------- | ------------------------------------------------------------------- |
+| URL                               | Customer, draft flag, and every shipping field (`page.tsx:160–206`) |
+| `localStorage` / `sessionStorage` | The form draft (`lib/customShaftsOrderFlowDraftStorage.ts`)         |
+| `CustomShaftDataContext`          | A third copy, passed on to the Bodenkonstruktion page               |
 
-Customer data is filled from the URL, from the linked Massschuh order, and from `getParentOrderInfo`. Those three can overwrite each other.
+- Customer data is filled from the URL, from the linked Massschuh order, and from `getParentOrderInfo`. These three can overwrite each other.
+- `useSingleCustomShaft` is another `useEffect` without a cache (`hooks/customShafts/useSingleCustomShaft.ts`). Opening the same model again fetches it again.
+- The same form is copied in `custom-shafts/product-order/[id]/page.tsx` (2254 lines). A fix on one page does not reach the other.
 
-The model is loaded by `useSingleCustomShaft`, another `useEffect` with no cache. Opening the same model again fetches it again.
+**Effects**
 
-The same form is copied in `custom-shafts/product-order/[id]/page.tsx`. A fix on the details page leaves the other page old.
-
-**What goes wrong**
-
-- The list and the "load more" counter can disagree, so the page walks the next API page while the shop waits.
-- A filter always starts from page 1, even for a list the shop just had.
+- The list and the "load more" counter can disagree, so the page walks through API pages while the user waits.
+- A filter always starts from page 1, even for a list that was just loaded.
 - After a reload, the form can be a mix of the URL, `localStorage`, and the server draft.
-- Shipping lives in the URL, so the details page cannot treat it as normal order data.
-- A save updates the context, the URL, and the draft storage by hand. Miss one of them and Boden or Balance shows the old order.
+- Shipping lives in the URL, so the form cannot treat it as normal order data.
+- A save updates the context, the URL, and the draft storage by hand. If one is missed, Bodenkonstruktion or Balance shows the old order.
 
-**What to use**
+**Recommended approach**
 
-TanStack Query for server data. One cache key, shared by the catalogue, the details page, and the product-order page.
+TanStack Query for server data, with one cache key shared by the catalogue, the details page, and the product-order page:
 
-| Data | Query key |
-| --- | --- |
-| Catalogue pages | `['custom-shafts', { search, gender, category, sort }]` |
-| One model | `['custom-shaft', shaftId]` |
-| The order or draft | `['custom-shaft-order', orderId]` |
-| Other shoe orders for this customer | `['sync-orders', customerId, 'Massschafterstellung']` |
+| Data                                | Query key                                               |
+| ----------------------------------- | ------------------------------------------------------- |
+| Catalogue pages                     | `['custom-shafts', { search, gender, category, sort }]` |
+| One model                           | `['custom-shaft', shaftId]`                             |
+| The order or draft                  | `['custom-shaft-order', orderId]`                       |
+| Other shoe orders for this customer | `['sync-orders', customerId, 'Massschafterstellung']`   |
 
-Zustand for the form while the shop is typing. One object, not one `useState` per field. `localStorage` is only a backup if the tab closes. The URL keeps only the model id, the order id, and the customer id. Shipping and measurements stay on the order.
+Zustand for the form while the user is typing: one object, not one `useState` per field. `localStorage` is only a backup if the tab closes. The URL keeps only the model id, the order id, and the customer id.
 
-Save draft or send order refreshes `custom-shaft-order`. Details, Boden, and Balance then read the same key. Do this before more UI work on the popup and the leather step.
+Saving a draft or sending the order invalidates `custom-shaft-order`, so the details page, Bodenkonstruktion, and Balance read the same data. This should be done before further UI work on the popup and the leather step.
 
-## 1.9 Leather on a catalogue product is hard to edit
+## 1.9 Leather configuration of a catalogue product
 
-The admin product list and the leather map are two different pages. The shop never sees that map when it takes the catalogue finish.
+The admin product list and the leather map are on different pages. The user never sees the leather map when applying the catalogue finish.
 
-**Product list:** `/dashboard/upload-product`
+**Admin product list:** `/dashboard/upload-product`
 
 ![Product list](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-ffc5a2e4-4489-4911-9674-fe80fb97f3d8-1791784633573.png)
 
-The list shows name, price, height, and gender. The pencil opens the whole product form at `/dashboard/add-products?id=...`. The leather map is buried inside that form.
+The list shows name, price, height, and gender. The pencil opens the full product form at `/dashboard/add-products?id=...`, where the leather map is one step inside.
 
-**Leather map:** Ledertyp, colour name, and the areas painted on the shoe picture.
+**Leather map:** Ledertyp, colour name, and the areas assigned on the shoe image.
 
 ![Assign leather types on the shoe](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-5d852b13-cdf3-4bac-b7cf-1ccec665f207-1791784634511.png)
 
-There is no way to open this map from the product list. To change one area, the admin has to open the full product and find this step. The list should open this map, and the admin should edit it from there.
+**Expected behaviour (admin)**
 
-**When the shop takes the catalogue finish**
+The product list opens the leather map directly, and the admin edits it there.
 
-On the order form the shop presses **Ausführung wie im Katalog**. The dialog only asks if Material & Ausführung should be filled from the saved data. It does not show the leather types, the colours, or the areas.
+**Applying the catalogue finish (partner)**
+
+On the order form the user presses **Ausführung wie im Katalog**. The dialog only asks whether Material & Ausführung should be filled from the saved data. It does not show the leather types, the colours, or the areas.
 
 ![Auto fill asks, but shows nothing](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-56eb84d2-057e-451f-a955-eb9298845844-1791784634884.png)
 
-The dialog should show what will be copied, so the shop sees what this product actually has before pressing OK. That is the same leather map from the admin product.
+**Expected behaviour (partner)**
 
-## 1.10 The zipper screen does not ask for chain type or colour
+The dialog shows what will be copied, using the same leather map as the admin product, so the user can check it before pressing OK.
 
-The zipper modal on the order form (`ZipperPlacementModal`). The shop picks a side and draws on the shoe.
+**Code**
+
+- Admin dashboard: `src/app/(dashbaord)/dashboard/upload-product/page.jsx:443` (pencil opens `add-products?id=`)
+- Admin dashboard: `src/components/dashboard/AddProducts/LeatherColorSectionModal.jsx`
+- Partner dashboard: `details/[id]/page.tsx:3892–3918` (dialog **Auto Fill bestätigen**), `:2747` (`applyAutoFillFromMassschafterstellung`)
+- Backend: `prisma/admin-order.schma.prisma:35–36` (`Massschafterstellung_json1`, `ledertyp_image` on `maßschaft_kollektion`)
+
+## 1.10 Zipper: no chain type or colour
+
+The zipper modal on the order form. The user picks a side and draws on the shoe.
 
 ![Zipper position and a drawing](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-5fc79ff3-326a-4890-b46c-19f05be02840-1791784881452.png)
 
-What is saved today:
+**Current behaviour**
 
-| On the screen | Stored as |
-| --- | --- |
-| Inside, Outside, or Both sides | `zipper_position` |
-| The red drawing | `zipper_image` |
+| On the screen                         | Stored as                        |
+| ------------------------------------- | -------------------------------- |
+| Inside, Outside, or Both sides        | `zipper_position`                |
+| The red drawing                       | `zipper_image`                   |
 | Extra zipper, yes or no, with a price | `zipper_extra` on the order JSON |
 
-Chain type and zipper colour are not on this screen. They are also not in the database. `maßschaft_kollektion` only has `is_zipper` (yes or no). `custom_shafts` only has `zipper_image`.
+Chain type and zipper colour are not on this screen. They are also not in the order JSON.
 
-A shoe zipper is ordered by chain type and colour, not only by where it sits. Chain type is coil or metal. Colour is the tape colour. Those two should be on this screen, next to the position, so the factory sees them with the drawing.
+**Expected behaviour**
 
-## 1.11 After the upper is done, switch to the floor and back
+A shoe zipper is ordered by chain type and colour, not only by its position. Chain type is coil or metal, and colour is the tape colour. Both fields belong on this screen next to the position, so the factory sees them together with the drawing.
 
-The dialog when the upper (Schaft) is finished (`ConfirmationModal`). It shows the customer, the product, **Further without a bottom**, and **Configure floor**.
+**Code**
+
+- Partner dashboard: `components/CustomShafts/ZipperPlacementModal.tsx`
+- Partner dashboard: `utils/customShoeOrderHelpers.ts:90–91` (`zipper_extra`, `zipper_position`)
+- Backend: `prisma/admin-order.schma.prisma:31` (`is_zipper` on the catalogue product), `:123` (`zipper_image` on `custom_shafts`)
+
+## 1.11 Moving between Schaft and Boden
+
+When the Schaft is finished, the dialog shows the customer, the product, **Weiter ohne Boden** (Further without a bottom), and **Boden konfigurieren** (Configure floor).
 
 ![Complete configuration](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-a18a3e9f-ac85-41d9-a579-68ec6a19dfd6-1791785129694.png)
 
-From here the shop should move between the upper and the floor in both directions. Upper to floor, and floor back to upper. Today **Configure floor** leaves the upper, and there is no matching way back.
+**Expected behaviour**
 
-**A 3D order cannot configure the floor.** The green **Configure floor** button still looks like a normal next step. The block appears only after the click, as a second popup: “Bestellung nicht möglich.” The warning belongs on this dialog, before the click, and **Configure floor** should not look available. **Further without a bottom** stays the way to finish a 3D order.
+The user can move between Schaft and Boden in both directions. Today **Boden konfigurieren** leaves the Schaft, and there is no matching way back.
+
+### 1.11.1 Going back from Boden repeats the first page load
+
+The Bodenkonstruktion page is `/dashboard/massschuhauftraege-deatils/2`. Its back arrow is `router.back()`.
+
+![Floor page, back to the upper](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/image-9b761ce8-895c-452a-a073-f296ab80072b-1791785780449.png)
+
+**Current behaviour**
+
+The Schaft page mounts again, so everything that runs on its first open runs again:
+
+| Repeated on return                                                                                                                                                                                  | Partner dashboard           | Backend                                                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------------------- |
+| The model is loaded again (`useSingleCustomShaft`)                                                                                                                                                  | `details/[id]/page.tsx:361` | `GET /custom_shafts/mabschaft_kollektion/:id`                                 |
+| `getSynchronousOrders` runs again and reopens the "other Massschafterstellung orders" popup. Closing it is remembered only in memory (`syncOrdersDismissedForCustomerRef`), which is lost on mount. | `page.tsx:665–700`          | `module/v2/shoe_orders/synchronous_order/synchronous_order.controllers.ts:20` |
+| `getParentOrderInfo` runs again when the Schaft was opened from a sample or feedback                                                                                                                | `page.tsx:801`              | `module/v1/admin_order/feedback/feedback.controllers.ts:1628`                 |
+| For Massschafterstellung or Komplettfertigung, `getMassschuheOrder` runs again and reopens the start popup (`NewSchaftErstellungModal`) when the URL has no `source`, `type`, or shipping choice    | `page.tsx:1282–1671`        | `GET` single Massschuh order                                                  |
+| A notification reopens **Auto Fill bestätigen** (`getSingleNotification`)                                                                                                                           | `page.tsx:2778–2880`        | —                                                                             |
+
+**Expected behaviour**
+
+Returning keeps the Schaft as the user left it. These calls and popups have already happened.
+
+**Suggestion (light)**
+
+From the Boden page, the user could edit the Schaft in a sidebar or a popup. This only makes the edit easier. It is not meant to make the screen look more professional.
+
+### 1.11.2 A 3D order cannot configure the Boden
+
+**Current behaviour**
+
+For a 3D order, **Boden konfigurieren** looks like a normal next step. The block appears only after the click, as a second popup: "Bestellung nicht möglich".
+
+**Expected behaviour**
+
+The warning appears on this dialog before the click, and **Boden konfigurieren** does not look available. **Weiter ohne Boden** remains the way to finish a 3D order.
+
+**Code**
+
+- Partner dashboard: `components/CustomShafts/ConfirmationModal.tsx:308–311` (check after the click), `:754–784` (the "Bestellung nicht möglich" popup)
+- Partner dashboard: `details/[id]/page.tsx:3822` (redirect to `massschuhauftraege-deatils/2`)
+
+## 1.12 Security and data integrity (backend)
+
+All paths are in `feetf1rst-crm-new`. No global login middleware runs before the routers (`app.ts:141–144`), so each route needs its own `verifyUser`.
+
+### 1.12.1 Routes without login
+
+These routes have no `verifyUser`, or have it commented out. They are not QR-code links, so they should require login.
+
+| Route                                                                                         | What it does                                                  | Code                                                       |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| `DELETE /v1/massschuhe-order/delete-all`                                                      | Deletes every Massschuh order of all partners and their files | `module/v1/massschuhe_order/massschuhe_order.routes.ts:87` |
+| `GET /v3/admin-order/get-all-orders`                                                          | Lists all `custom_shafts` orders of all partners              | `module/v3/admin_order/admin_order.routes.ts:18`           |
+| `GET`/`POST /v3/admin-order/get-child-list`                                                   | Returns child orders by id                                    | `admin_order.routes.ts:25`, `:32`                          |
+| `GET /v3/admin-order/get-all-partner`                                                         | Lists partner business names                                  | `admin_order.routes.ts:39`                                 |
+| `GET /v1/custom_shafts/treack/get-custom-shafts-status-history/:orderId`                      | Status history of one order (`verifyUser` commented out)      | `module/v1/admin_order/treack/treack.routes.ts:187–191`    |
+| `DELETE /v2/shoe-orders/remove-file/:fileId`                                                  | Deletes an order file and its S3 object (`verifyUser` commented out) | `module/v2/shoe_orders/shoe_orders.routes.ts:187–191` |
+| `DELETE /v1/custom_shafts/feedback/feedback-images/delete`                                    | Deletes feedback images                                       | `module/v1/admin_order/feedback/feedback_images/feedback_images.routes.ts:29` |
+
+These routes are public on purpose, because a phone opens them from a QR code: Halbprobe images (`module/v2/shoe_orders/halbprobe_images/halbprobe_images.routes.ts:17`, `:24`), feedback image upload and list (`feedback_images.routes.ts:18–22`, `:36`), and the barcode and production-sheet links (2.8). On them the order id is the only key. A signed token with an expiry date in the QR link would be safer than the plain id.
+
+### 1.12.2 The order is not checked against the user
+
+These routes require login, but the handler loads the order by id only. It never checks that `partnerId` belongs to the logged-in user, so any partner can read or change another partner's order if they know the id.
+
+| Route                                                  | Handler and code                                                                                                    | Effect                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `GET /v1/custom_shafts/get/:id`                        | `getSingleCustomShaft`, `custom_shafts.controllers.ts:5115` (`findUnique({ where: { id } })` at `:5128`)            | Reads the order with customer name, email, phone               |
+| `GET /v1/custom_shafts/treack/get-custom-shafts/:partnerId` | `getCustomShaftsByPartnerId`, `treack/treack.controllers.ts:580` (filters by the `partnerId` from the URL, `:605`) | Lists another partner's orders                                 |
+| `PATCH /v1/custom_shafts/update-status/:id`            | `updateCustomShaftStatus`, `custom_shafts.controllers.ts:5418` (`findUnique` at `:5486`)                            | Changes `status`, `last_status`, `order_status`                |
+| `PATCH /v1/custom_shafts/update-payment-status`        | `updatePaymentStatus`, `custom_shafts.controllers.ts:6522` (`findMany({ where: { id: { in } } })` at `:6550`)        | Sets Paid / Unpaid on any order                                |
+| `PATCH /v1/custom_shafts/update-admin-order/:id`       | `updateAdminOrder`, `custom_shafts.controllers.ts:7606` (`findUnique` at `:7751`)                                   | Changes `production_number`, production and shipping cost      |
+| `DELETE /v1/custom_shafts/delete/:id`                  | `deleteCustomShaft`, `custom_shafts.controllers.ts:6675`                                                            | Deletes the order and its children                             |
+
+The routes are in `module/v1/admin_order/custom_shafts.routes.ts:210–212`, `:221–223`, `:254–256`, `:265–267`, `:330–332`. All of them allow `PARTNER`, `ADMIN`, and `EMPLOYEE`.
+
+Payment status, `production_number`, and production cost are admin decisions. Today a partner token can change them, even on the user's own order. These handlers should be admin-only, and the others should add `partnerId: req.user.id` to the `where`.
+
+`updateAdminOrderAfterDraft` already does the check for a partner (`custom_shafts.controllers.ts:7994–8000`), so the same pattern can be reused.
+
+### 1.12.3 The price comes from the browser
+
+The order create stores the `totalPrice` that the browser sends (`custom_shafts.controllers.ts:2346`, `totalPrice: totalPrice ? parseFloat(totalPrice) : null`). A shipping cost sent by the browser also wins over the server price (`:2307–2324`, `explicitShippingCost1 ?? autoShippingCost1`). The same applies on a draft update (`:8098–8110`). This value goes into billing (`finalizeCustomShaftOrderBilling`) and the balance.
+
+**Expected behaviour**
+
+The backend calculates the price from the catalogue, the options, and `shipping_pricing`, and ignores the browser value, or rejects the order when the two differ.
+
+### 1.12.4 Saving a draft can delete the order's own images
+
+`updateAdminOrderAfterDraft` (`custom_shafts.controllers.ts:7939`) goes through each file field. When the field is sent, it deletes the old S3 file first and then stores the new value (`:8043–8049`):
+
+- It does not compare the old and the new URL. The partner dashboard re-sends the existing S3 URL when the image is unchanged (`utils/customShoeOrderHelpers.ts:446–464` for `zipper_image` and `paintImage`, `:396–404` for `image3d_1` and `image3d_2`). If the same URL comes back, the file is deleted while the order still points to it.
+- The list includes `custom_models_image` (`:8012`), which is a column of `custom_models` (`prisma/admin-order.schma.prisma:650`), not of `custom_shafts`. When it is sent (custom model draft, `customShoeOrderHelpers.ts:414–424`), Prisma rejects the update. The old files of the other fields are already deleted at that point, and the error path removes only the new uploads (`:8331–8334`).
+
+**Expected behaviour**
+
+Delete the old file only when the URL really changed, and only after the database update has succeeded. Write `custom_models_image` to `custom_models`.
+
+### 1.12.5 Order number can be repeated
+
+`generateNextCustomShaftOrderNumber` (`module/v2/admin_order_transitions/admin_order_transitions.controllers.ts:41–54`) takes `MAX(orderNumber) + 1` per partner. `orderNumber` is only indexed, not unique (`prisma/admin-order.schma.prisma:100`, `:371`). Two orders sent at the same moment can get the same number. Because the production number is built from it (1.6), it is repeated too.
+
+**Expected behaviour**
+
+A unique rule on `(partnerId, orderNumber)` and a database sequence or a lock for the next number.
+
+### 1.12.6 Uploads
+
+- No file type check. Multer only limits the size (100 MB) and stores the type the browser declares (`config/multer.config.ts:14–27`).
+- On `PATCH /v1/custom_shafts/update-admin-order-after-draft/:id`, `upload.fields(...)` runs before `verifyUser` (`custom_shafts.routes.ts:342–357`). A request without login still uploads its files to S3 before it is rejected.
+
+**Expected behaviour**
+
+An allow-list of file types per field (images, PDF, STL/OBJ for 3D), and `verifyUser` before `upload` on every route.
 
 ---
 
-# Chapter 2: Clinical Assistant (Masschuhauftrag)
+# Chapter 2: Clinical Assistant (Massschuhauftrag)
 
 Route: `/dashboard/scanning-data/[id]?form=clinical_assistant`
 
-The shop builds one custom shoe here, step by step: Befund, Versorgungsplan, Leisten, Bettung, Schaft, Boden, Halbprobe, Auftrag and Abholung.
+The user builds one custom shoe here, step by step: Befund, Versorgungsplan, Leisten (Leistenerstellung), Bettung (Bettungserstellung), Schaft (Massschafterstellung), Boden (Bodenkonstruktion), Halbprobe (Halbprobenerstellung), Auftrag, and Abholung.
 
-The page often shows old data until it is reloaded. That is written in 2.5. What a save actually writes is in 2.6.
+Each part is stored as a component with a category from `components_catagory` (backend `prisma/clinica-assistant.schma.prisma:307`). Stale data on the page is covered in 2.5. What a save actually writes is covered in 2.6.
 
 ## 2.1 Overview: header and progress do not match
 
-The first screen of the flow.
-
 ![Clinical Assistant overview](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549138557-5hb07nd3-clinical-assistant-overview.png)
 
-The flow is good, but the customer header shows dashes instead of real data, and the two progress numbers do not match ("1 von 2" here, "0 von 4" in Konfiguratoren). There are also too many buttons, so the next step is not clear.
+The flow is good, but:
+
+- The customer header shows dashes instead of real data.
+- The two progress numbers disagree: "1 von 2" here, "0 von 4" in Konfiguratoren.
+- There are too many buttons, so the next step is not clear.
 
 ## 2.2 Konfiguratoren cards are too small
 
-The cards for each part of the shoe.
-
 ![Konfiguratoren cards](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549139701-1wmon3ay-clinical-assistant-konfiguratoren.png)
 
-The cards are too small for the data they show (status, icons, employee, warnings, production type). We suggest a full-width list in the real workflow order: Leisten → Halbprobe → Schaft/Boden → Auftrag → Abholung.
+The cards are too small for what they show: status, icons, employee, warnings, and production type.
 
-## 2.3 Leisten drawer can show old data
+**Suggestion**
 
-The last (Leisten) form. The layout is fine. The data in it is the problem.
+A full-width list in the real workflow order: Leistenerstellung → Halbprobenerstellung → Massschafterstellung / Bodenkonstruktion → Auftrag → Abholung.
+
+## 2.3 Leisten drawer can show stale data
 
 ![Leisten konfigurieren](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549140701-h839jqwt-clinical-assistant-leisten-config.png)
 
-The UI here is fine. The work is in the code: we need better state management, so the data in the drawer always matches the order.
+The layout is fine. The data in the drawer does not always match the order. This is fixed by the state management in 2.5.
 
 ## 2.4 Halbprobe feedback is hard to read
 
-The half-sample (Halbprobe) modal.
-
 ![Halbprobe workspace](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549141879-u0jy1moz-clinical-assistant-halbprobe.png)
 
-We need to improve the UI of this modal, so the feedback is clearer and easier to read.
+The Halbprobenerstellung modal needs a UI review, so the feedback is clearer and easier to read.
 
-## 2.5 The page keeps old data until reload
+## 2.5 The page keeps stale data until reload
 
-How the screen stores the order. Draft data (by customer) and order data (by order) are loaded in two different ways.
+**Current behaviour**
 
-**What we use now:** only React `useState` and `useEffect` inside one very large component.
+- Draft data (per customer) and order data (per order) are loaded in two different ways.
+- State is plain React `useState` and `useEffect` inside very large components.
+- The page often shows old data until reload, and the flow between steps breaks after regular updates.
 
-**What would be better:** TanStack Query for server data (cache per order, auto update after save) and Zustand for the page state (one store for the order). One store for the order, and the backend decides which steps are allowed.
+**Recommended approach**
 
-The page often shows old data until reload. This is why the flow breaks after regular updates.
+TanStack Query for server data (one cache per order, refreshed after each save) and one Zustand store for the order. The backend decides which steps are allowed.
 
-## 2.6 Saving one part writes the wrong data
+**Code**
 
-The configurator on the clinical order. Four things change what is stored. The table under them is the full code list.
+- Partner dashboard: `app/(dashboard)/dashboard/_components/Scanning/ClinicalAssistant.tsx` (3837 lines), `components/clinical/CarePlan.tsx` (3083 lines), `components/clinical/ComponentConfigurator.tsx` (3294 lines)
+
+## 2.6 Saving a component writes inconsistent data
 
 ![Clinical order, configurators](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-order-configurators-1791548823758.png)
 
 ![One part saved three wrong ways](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-part-three-problems-1791781907956.svg)
 
-- The same part can be saved more than once. There is no rule “one last per order”, so a double click creates a second row. The page shows only one.
-- Internal and FeetF1rst are saved in two tables. One can say FeetF1rst makes it, the other can say the shop makes it.
-- Saving one part confirms the whole supply. The shop does not have to press the signature buttons.
-- The barcode link does not need a login. Whoever has the link can add a scan to that order. Anyone can write a scan there without proving who they are (`GET /v4/clinical_assistant/order_components/barcode-scan`).
+Four issues change what is stored:
 
-**Where in the code**
+- **Duplicates.** There is no rule "one component per category per order", so a double click creates a second row. The page shows only one.
+- **Two sources for Internal / FeetF1rst.** The production type is stored in two tables, and they can disagree.
+- **One save confirms the whole supply.** Saving one active component sets `order_conform`, without the signature buttons.
+- **Public barcode link.** `GET /v4/clinical_assistant/order_components/barcode-scan` has no login. Anyone with the link can add a scan to that order.
 
-| # | What happens | Where |
-| --- | --- | --- |
-| 1 | `getOrderComponents` is called from 9 places, once per part and again after every save | `components/clinical/ComponentConfigurator.tsx` (lines 733–1078) |
-| 2 | Leisten form is read every 400 ms while open | `ComponentConfigurator.tsx:1232` (`setInterval(tick, 400)`) |
-| 3 | Three files with more than 3000 lines each | `ComponentConfigurator.tsx` (3294), `CarePlan.tsx` (3083), `ClinicalAssistant.tsx` (3837) |
-| 4 | No chat with FeetF1rst on External cards; the shop must open the Balance page | `ComponentConfigurator.tsx` |
-| 5 | Live update (`shoe-order-steps`) is sent only from the QR / barcode link | backend `order_sheet.controllers.ts:105` |
-| 6 | On a live update, only the step list reloads, not the cards | `CarePlan.tsx:698` |
-| 7 | Saving a part confirms the whole order (`order_conform`) without the signature buttons | backend `order_components.controllers.ts:1633` (`markShoeOrderConform`) |
-| 8 | No unique rule for one part per order, so a double click can create the same part twice | schema `clinica_assistant_order_components` (no `@@unique([shoe_order_id, catagory])`) |
-| 9 | Same for active parts: duplicate rows possible | schema `active_components` (no `@@unique([shoe_order_id, catagory])`) |
-| 10 | Internal / External is saved in 2 tables that can disagree | `clinica_assistant_order_components.component_type` and `active_components.component_type` |
-| 11 | The barcode link has no login, so anyone with the link can write a scan on that order | `order_components.routes.ts` (`GET /barcode-scan`, no `verifyUser`) |
+**Full list**
 
-### 2.6.1 “No, delete” removes the whole supply
+| #   | Issue                                                                                       | Code                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `getOrderComponents` is called from 9 places, once per component and again after every save | Partner dashboard `components/clinical/ComponentConfigurator.tsx:733, 773, 814, 847, 885, 915, 960, 1043, 1078`                                      |
+| 2   | The Leisten form is read every 400 ms while open                                            | Partner dashboard `ComponentConfigurator.tsx:1232` (`setInterval(tick, 400)`)                                                                        |
+| 3   | Three files over 3000 lines                                                                 | `ComponentConfigurator.tsx`, `CarePlan.tsx`, `ClinicalAssistant.tsx`                                                                                 |
+| 4   | No chat with FeetF1rst on External cards; the user has to open the Balance page             | Partner dashboard `ComponentConfigurator.tsx`                                                                                                        |
+| 5   | The live update `shoe-order-steps` is sent only from the QR / barcode link                  | Backend `module/v4/clinical_assistant/order_components/order_sheet/order_sheet.controllers.ts:105`                                                   |
+| 6   | On a live update, only the step list reloads, not the cards                                 | Partner dashboard `components/clinical/CarePlan.tsx:698`                                                                                             |
+| 7   | Saving one component confirms the whole order (`order_conform`)                             | Backend `module/v4/clinical_assistant/order_components/order_components.controllers.ts:114` (`markShoeOrderConform`), called at `:1633`              |
+| 8   | No unique rule for one component per category, so duplicates are possible                   | Backend `prisma/clinica-assistant.schma.prisma:263–265` (`clinica_assistant_order_components`: index only, no `@@unique([shoe_order_id, catagory])`) |
+| 9   | Same for active components                                                                  | Backend `clinica-assistant.schma.prisma:344–345` (`active_components`: index only)                                                                   |
+| 10  | Internal / External is stored in two tables that can disagree                               | Backend `clinica-assistant.schma.prisma:198` and `:333` (`component_type` in both tables)                                                            |
+| 11  | The barcode link has no login                                                               | Backend `module/v4/clinical_assistant/order_components/order_components.routes.ts:103–106` (marked PUBLIC, no `verifyUser`)                          |
 
-The popup when the shop leaves the page. The red button does not only throw away a draft.
+### 2.6.1 Leave-page popup deletes the whole supply
 
 ![Draft saved popup when leaving](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-order-leave-draft-popup-1791549476568.png)
 
-- "Draft" only means "order not confirmed". Parts are not checked, so a supply with a running FeetF1rst order is still called a draft.
-- **"Nein, löschen" deletes the whole supply** (findings, signature, insurance, notes, history and more). No undo, no trash. A running FeetF1rst order is not cancelled, only unlinked.
-- Confusing buttons: question "keep?", red button "No, delete".
-- Not shown on tab close or reload. If the check fails, the page just leaves.
+**Current behaviour**
+
+- "Entwurf" only means "order not confirmed". Components are not checked, so a supply with a running FeetF1rst order is still called a draft.
+- **"Nein, löschen" deletes the whole supply**: findings, signature, insurance, notes, history, and more. There is no undo and no trash. A running FeetF1rst order is not cancelled, only unlinked.
+- The wording is confusing: the question asks "keep?", and the red button says "No, delete".
+- The popup does not appear on tab close or reload. If the check fails, the page simply leaves.
+
+**Code**
+
+- Partner dashboard: `components/clinical/ClinicalAssistantLeaveGuard.tsx:254–287` (`deleteDraftAndLeave`), `:451` (button)
+- Backend: `DELETE /v4/clinical_assistant/delete-order/:order_id`, `module/v4/clinical_assistant/clinical_assistant.routes.ts:116`, handler `clinical_assistant.controllers.ts:897` (`deleteOrder`)
 
 ## 2.7 Voice recording works only in some browsers
 
@@ -378,6 +594,26 @@ Klinische Denkstruktur, button **Gespräch aufnehmen**.
 
 ![Klinische Denkstruktur](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791552031805-ow7omyg4-clinical-assistant-voice.png)
 
-For **Gespräch aufnehmen** we use the free speech recognition that is built into the browser. It works well in Chrome and Edge, but not in every browser (for example Firefox), so some shops cannot use it.
+**Current behaviour**
 
-If we want voice to work in every browser, we need a better solution: record the audio in the browser and send it to a speech-to-text service on our server (for example OpenAI Whisper, Deepgram or Azure Speech). This works the same in all browsers, gives better results for German medical words, but it has a cost per minute.
+Recording uses the free speech recognition built into the browser. It works in Chrome and Edge, but not in every browser (for example Firefox), so some partners cannot use it.
+
+**Suggestion**
+
+Record the audio in the browser and send it to a speech-to-text service on the server (for example OpenAI Whisper, Deepgram, or Azure Speech). This works the same in every browser and recognises German medical terms better, but it costs per minute.
+
+## 2.8 Security (backend)
+
+**The order is not checked against the user.** Both handlers load the `shoe_order` by id only and never check `partnerId`, so a partner can read or write the components of another partner's supply. Other handlers in the same module already filter by `partnerId` (`changeComponentType`, `deleteOrderComponent`, `deleteOrder`).
+
+- `createOrderComponents`, `module/v4/clinical_assistant/order_components/order_components.controllers.ts:1030` (`shoe_order.findUnique({ where: { id } })` at `:1163`)
+- `getOrderComponents`, `order_components.controllers.ts:1993` (`findFirst({ where: { shoe_order_id, catagory } })` at `:2026`)
+
+**Public production-sheet links.** Besides the barcode link (2.6), the production sheet can be read and its step started or ended without login. Only the order id protects it.
+
+- `GET /v4/clinical_assistant/order_components/order_sheet/produktionsauftrag`, `order_sheet/order_sheet.routes.ts:37`
+- `POST …/produktionsauftrag/change-status`, `order_sheet.routes.ts:44`. This is the call that sends the live update `shoe-order-steps` (`order_sheet.controllers.ts:105`).
+
+**Expected behaviour**
+
+Add `partnerId: req.user.id` to both lookups. The QR links get a signed token with an expiry date instead of the plain order id.
