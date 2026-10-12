@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="280" viewBox="0 0 720 280" fill="none">
+  <rect width="720" height="280" rx="12" fill="#F7F6F3"/>
+  <text x="36" y="40" fill="#6B6560" font-family="Georgia, serif" font-size="13">Order number</text>
+  <text x="470" y="40" fill="#6B6560" font-family="Georgia, serif" font-size="13">Production number</text>
+
+  <rect x="36" y="64" width="180" height="52" rx="8" fill="#FFFFFF" stroke="#D9D3CB"/>
+  <text x="126" y="96" text-anchor="middle" fill="#1C1917" font-family="Georgia, serif" font-size="22">10100</text>
+
+  <rect x="36" y="156" width="180" height="52" rx="8" fill="#FFFFFF" stroke="#D9D3CB"/>
+  <text x="126" y="188" text-anchor="middle" fill="#1C1917" font-family="Georgia, serif" font-size="22">11100</text>
+
+  <path d="M216 90 H300" stroke="#A39E96" stroke-width="1.5"/>
+  <path d="M216 182 H300" stroke="#A39E96" stroke-width="1.5"/>
+  <path d="M300 90 V182" stroke="#A39E96" stroke-width="1.5"/>
+  <path d="M300 136 H390" stroke="#A39E96" stroke-width="1.5"/>
+  <path d="M382 130 L396 136 L382 142" stroke="#A39E96" stroke-width="1.5" fill="none"/>
+
+  <rect x="408" y="104" width="180" height="64" rx="8" fill="#FFFFFF" stroke="#9A3412"/>
+  <text x="498" y="143" text-anchor="middle" fill="#9A3412" font-family="Georgia, serif" font-size="26">AB100</text>
+
+  <text x="36" y="248" fill="#6B6560" font-family="Georgia, serif" font-size="14">Same shop. Both end in 100. One production number.</text>
+</svg>

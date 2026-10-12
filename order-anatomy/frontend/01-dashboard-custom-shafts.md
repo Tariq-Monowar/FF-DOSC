@@ -81,6 +81,19 @@ image.png
 - The whole day's work is backed up once, at 03:00 at night. For example: a shop creates a draft order and deletes it one hour later. That order cannot be recovered, because it never reached a backup.
 - Data older than 60 days can no longer be restored.
 
+## 1.6 Production number is not unique
+
+![Two order numbers become one production number](./production-number-not-unique.svg)
+
+The production number is the shop prefix plus the last 3 digits of the order number (`buildProductionNumber`). The full order number is not kept.
+
+| Order number | Prefix AB |
+| --- | --- |
+| 10100 | AB100 |
+| 11100 | AB100 |
+
+Both end in `100`, so both become `AB100`. The same shop gets the same production number again every 1000 orders (`10000` and `11000` are both `AB000`). `production_number` has no unique rule, so two orders can share it. A search or a factory sheet can then open the wrong order.
+
 ---
 
 # Chapter 2: Clinical Assistant (Masschuhauftrag)
@@ -92,6 +105,7 @@ The main issue on this page is state management. Because of the many regular upd
 **What we use now:** only React `useState` and `useEffect` inside one very large component.
 
 **What would be better:** TanStack Query for server data (cache per order, auto update after save) and Zustand for the page state (one store for the order).
+
 ## 2.1 Overview
 
 ![Clinical Assistant overview](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791549138557-5hb07nd3-clinical-assistant-overview.png)
@@ -155,4 +169,3 @@ The page does not handle state well. Draft data (by customer) and order data (by
 This section also needs to be improved. For **Gespräch aufnehmen** we use the free speech recognition that is built into the browser. It works well in Chrome and Edge, but not in every browser (for example Firefox), so some shops cannot use it.
 
 If we want voice to work in every browser, we need a better solution: record the audio in the browser and send it to a speech-to-text service on our server (for example OpenAI Whisper, Deepgram or Azure Speech). This works the same in all browsers, gives better results for German medical words, but it has a cost per minute.
-
