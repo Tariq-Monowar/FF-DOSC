@@ -83,7 +83,7 @@ image.png
 
 ## 1.6 Production number is not unique
 
-![Two order numbers become one production number](./production-number-not-unique.svg)
+![Two order numbers become one production number](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/production-number-not-unique-1791781908727.svg)
 
 The production number is the shop prefix plus the last 3 digits of the order number (`buildProductionNumber`). The full order number is not kept.
 
@@ -138,6 +138,15 @@ The page does not handle state well. Draft data (by customer) and order data (by
 
 ![Clinical order, configurators](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-order-configurators-1791548823758.png)
 
+![One part saved three wrong ways](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/clinical-part-three-problems-1791781907956.svg)
+
+Section 2.6 already lists the main problems. These three are the ones that change what is saved:
+
+- The same part can be saved more than once. There is no rule “one last per order”, so a double click creates a second row. The page shows only one.
+- Internal and FeetF1rst are saved in two tables. One can say FeetF1rst makes it, the other can say the shop makes it.
+- Saving one part confirms the whole supply. The shop does not have to press the signature buttons.
+- The barcode link does not need a login. Whoever has the link can add a scan to that order. Anyone can write a scan there without proving who they are (`GET /v4/clinical_assistant/order_components/barcode-scan`).
+
 **Problems**
 
 | #   | Problem                                                                                 | Where                                                                                      |
@@ -152,6 +161,7 @@ The page does not handle state well. Draft data (by customer) and order data (by
 | 8   | No unique rule for one part per order, so a double click can create the same part twice | schema `clinica_assistant_order_components` (no `@@unique([shoe_order_id, catagory])`)     |
 | 9   | Same for active parts: duplicate rows possible                                          | schema `active_components` (no `@@unique([shoe_order_id, catagory])`)                      |
 | 10  | Internal / External is saved in 2 tables that can disagree                              | `clinica_assistant_order_components.component_type` and `active_components.component_type` |
+| 11  | The barcode link has no login, so anyone with the link can write a scan on that order  | `order_components.routes.ts` (`GET /barcode-scan`, no `verifyUser`)                        |
 
 ### 2.6.1 "Entwurf gespeichert" popup
 
