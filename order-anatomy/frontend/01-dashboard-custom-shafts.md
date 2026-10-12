@@ -16,6 +16,8 @@
 | 1.10    | Zipper: no chain type or colour                                                                             |
 | 1.11    | Moving between Schaft and Boden                                                                             |
 | 1.12    | Security and data integrity (backend)                                                                       |
+| 1.13    | The FedEx label is stored twice                                                                             |
+| 1.14    | Shipping time, delivery time, and the Lieferschein are stored twice                                        |
 | 2.1     | Overview: header and progress                                                                               |
 | 2.2     | Konfiguratoren cards                                                                                        |
 | 2.3     | Leisten drawer                                                                                              |
@@ -488,6 +490,62 @@ A unique rule on `(partnerId, orderNumber)` and a database sequence or a lock fo
 **Expected behaviour**
 
 An allow-list of file types per field (images, PDF, STL/OBJ for 3D), and `verifyUser` before `upload` on every route.
+
+## 1.13 The FedEx label is stored twice
+
+The same three fields exist on the order and on the shipping row.
+
+| Field | On the order `custom_shafts` | On the shipping row `custom_shafts_shipping` |
+| ----- | ---------------------------- | -------------------------------------------- |
+| Label PDF | `pickup_label` (`admin-order.schma.prisma:278`) | `pickup_label` (`:732`) |
+| When the label was set | `label_created_at` (`:279`) | `label_created_at` (`:737`) |
+| FedEx tracking | `fedex_tracking_number` (`:280`) | `fedex_tracking_number` (`:741`) |
+
+The order columns are the old copy. The shipping row is the new copy. A new label does not replace the old columns, and a cancel then clears the old columns anyway.
+
+**Current behaviour**
+
+- A FedEx label is saved only on `custom_shafts_shipping` (`utils/fedex.service.ts:306–314` and `:534–542`). A manual upload does the same (`module/v1/admin_order/treack/treack.controllers.ts:2141–2150`).
+- The old admin update still writes `pickup_label` on the order (`module/v1/admin_order/custom_shafts.controllers.ts:7774–7804`, `PATCH /custom_shafts/update-admin-order/:id`).
+- The order response returns both. The order field is `pickup_label` (`module/v1/massschuhe_order/admin_order/admin_order.controllers.ts:4122`). The shipping row is `custom_shafts_shipping[].pickup_label` (`:4222–4228`). After a new label, the shipping row has the new PDF and the order field still has the old one.
+- Cancel and void then set the order columns to null (`module/v3/admin_order/admin_to_paerner_shipping/shipping.controllers.ts:805–808`, `module/v1/admin_order/custom_shafts.background.service.ts:1641–1667`) and delete the S3 file from both URLs (`:1657–1676`). The new cancel overwrites the old copy. When the two URLs differ, both files are deleted.
+
+**Old code still next to the new code**
+
+A lot of the earlier shipping code is still in these files. Some of it no longer saves the label. For the rest, the code does not say whether that path is still the one in use.
+
+- The schema calls the link `custom_shafts_shipping.custom_shafts_id` legacy, and says new code uses `custom_shafts.custom_shafts_shipping_id` (`admin-order.schma.prisma:282–294`). Group remove still writes the old `custom_shafts_id` (`module/v3/admin_order/paerner_to_admin_shipping/shipping.controllers.ts:790–792`). Cancel still finds the orders by the new id, the old id, and `package_group_id` together (`admin_to_paerner_shipping/shipping.controllers.ts:773–780`).
+- `custom_shafts_shipping_backup` is still read and written when a partner-to-admin group changes (`paerner_to_admin_shipping/shipping.controllers.ts:780–796`). Another handler in the same file says that JSON field is not used (`:1536–1538`).
+
+**Expected behaviour**
+
+The label, the time, and the tracking number live only on `custom_shafts_shipping`. The order does not keep a second copy. One link, `custom_shafts_shipping_id`, is how an order finds its shipping row.
+
+## 1.14 Shipping time, delivery time, and the Lieferschein are stored twice
+
+The same pattern as 1.13. The order keeps a copy, and the shipping row keeps another. A later write updates one of them.
+
+| What | On the order `custom_shafts` | On the shipping side |
+| ---- | ---------------------------- | -------------------- |
+| Sent at | `shipping_time` (`admin-order.schma.prisma:224`) | `custom_shafts_shipping.shipping_time` (`:745`) |
+| Delivered at | `delivered_at` (`:241`) | `custom_shafts_shipping.delivered_at` (`:781`) |
+| Admin-to-partner type | `shipping_type2` (`:215`) | `custom_shafts_shipping.shipping_type` (`:714`) |
+| Lieferschein PDF | — | `custom_shafts_shipping.delivery_note` (`:766`) and `shipping_delivery_note.delivery_note_pdf` (`:818`) |
+| Lieferschein number | `delivery_note_number` (`:300`) | `shipping_delivery_note.delivery_note_number` (`:819`) |
+
+**Current behaviour**
+
+- The grouped-shipping cron writes `shipping_time` on the order and on the shipping row in one transaction (`cron/admin_to_partner_grouped_shipping.ts:207–224`). Cancel then clears `shipping_time` on the order only (`module/v3/admin_order/admin_to_paerner_shipping/shipping.controllers.ts:801–803`). The shipping row keeps its time (`:789–799`).
+- The same cron copies the service into `shipping_type2` on the order and into `shipping_type` on the shipping row (`cron/admin_to_partner_grouped_shipping.ts:661–673`). Sending the label does it again (`admin_to_paerner_shipping/shipping.controllers.ts:1990–2002`).
+- The FedEx track cron writes `delivered_at` on the shipping row, then copies that time onto the orders (`cron/fedex.custom-webhook.ts:204`, `:222–225`). Marking the group Ausgeführt writes `delivered_at` on the orders only (`module/v1/admin_order/custom_shafts.controllers.ts:6489–6499` and `admin_to_paerner_shipping/shipping.controllers.ts:2489–2495`). The shipping row is not updated there, so the two times can differ.
+- The Lieferschein PDF from the shipping cron stays on `custom_shafts_shipping.delivery_note`. The later delivery-note create stores another PDF on `shipping_delivery_note.delivery_note_pdf` (`module/v3/admin_order/delivery_note/delivery_note.controllers.ts:419–422`). The screen reads the new PDF, and if that is empty it falls back to the old one (`module/v3/admin_order/deliverd_group/deliverd_group.controllers.ts:366–368`).
+- The Lieferschein number is written on the note and again on each order (`delivery_note.controllers.ts:421–422` and `:441–445`, and again at `:990–998`).
+
+The customer name is the same kind of copy, already in 1.3.2 (`customerId`, `other_customer_name`, `customerName`). Internal / External is the same kind of copy, already in 2.6 (`component_type` in two tables).
+
+**Expected behaviour**
+
+`shipping_time`, `delivered_at`, and `shipping_type` live on `custom_shafts_shipping`. The Lieferschein PDF and its number live on `shipping_delivery_note`. The order keeps the link, not a second copy.
 
 ---
 
