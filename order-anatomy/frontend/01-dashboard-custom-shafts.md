@@ -17,7 +17,8 @@
 | 1.11    | Moving between Schaft and Boden                                                                             |
 | 1.12    | Security and data integrity (backend)                                                                       |
 | 1.13    | The FedEx label is stored twice                                                                             |
-| 1.14    | Shipping time, delivery time, and the Lieferschein are stored twice                                        |
+| 1.14    | Shipping time, delivery time, and the Lieferschein are stored twice                                         |
+| 1.15    | Every shoe category is created into one table                                                               |
 | 2.1     | Overview: header and progress                                                                               |
 | 2.2     | Konfiguratoren cards                                                                                        |
 | 2.3     | Leisten drawer                                                                                              |
@@ -27,10 +28,14 @@
 | 2.6.1   | Leave-page popup deletes the whole supply                                                                   |
 | 2.7     | Voice recording                                                                                             |
 | 2.8     | Security (backend)                                                                                          |
-| 3.1     | Kopfdaten keeps the first answer and drops the saved order                                                 |
+| 3.1     | Kopfdaten keeps the first answer and drops the saved order                                                  |
 | 3.2     | Sprengung can send the short prefill                                                                        |
 | 3.3     | The price stays on the start price                                                                          |
 | 3.4     | One store for the form                                                                                      |
+| 4.1     | The sole card waits on a second list                                                                        |
+| 4.2     | The checklist is copied into many states                                                                    |
+| 4.3     | The price stays on the base price                                                                           |
+| 4.4     | One store for the Boden form                                                                                |
 
 ---
 
@@ -495,11 +500,11 @@ An allow-list of file types per field (images, PDF, STL/OBJ for 3D), and `verify
 
 The same three fields exist on the order and on the shipping row.
 
-| Field | On the order `custom_shafts` | On the shipping row `custom_shafts_shipping` |
-| ----- | ---------------------------- | -------------------------------------------- |
-| Label PDF | `pickup_label` (`admin-order.schma.prisma:278`) | `pickup_label` (`:732`) |
-| When the label was set | `label_created_at` (`:279`) | `label_created_at` (`:737`) |
-| FedEx tracking | `fedex_tracking_number` (`:280`) | `fedex_tracking_number` (`:741`) |
+| Field                  | On the order `custom_shafts`                    | On the shipping row `custom_shafts_shipping` |
+| ---------------------- | ----------------------------------------------- | -------------------------------------------- |
+| Label PDF              | `pickup_label` (`admin-order.schma.prisma:278`) | `pickup_label` (`:732`)                      |
+| When the label was set | `label_created_at` (`:279`)                     | `label_created_at` (`:737`)                  |
+| FedEx tracking         | `fedex_tracking_number` (`:280`)                | `fedex_tracking_number` (`:741`)             |
 
 The order columns are the old copy. The shipping row is the new copy. A new label does not replace the old columns, and a cancel then clears the old columns anyway.
 
@@ -525,13 +530,13 @@ The label, the time, and the tracking number live only on `custom_shafts_shippin
 
 The same pattern as 1.13. The order keeps a copy, and the shipping row keeps another. A later write updates one of them.
 
-| What | On the order `custom_shafts` | On the shipping side |
-| ---- | ---------------------------- | -------------------- |
-| Sent at | `shipping_time` (`admin-order.schma.prisma:224`) | `custom_shafts_shipping.shipping_time` (`:745`) |
-| Delivered at | `delivered_at` (`:241`) | `custom_shafts_shipping.delivered_at` (`:781`) |
-| Admin-to-partner type | `shipping_type2` (`:215`) | `custom_shafts_shipping.shipping_type` (`:714`) |
-| Lieferschein PDF | — | `custom_shafts_shipping.delivery_note` (`:766`) and `shipping_delivery_note.delivery_note_pdf` (`:818`) |
-| Lieferschein number | `delivery_note_number` (`:300`) | `shipping_delivery_note.delivery_note_number` (`:819`) |
+| What                  | On the order `custom_shafts`                     | On the shipping side                                                                                    |
+| --------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Sent at               | `shipping_time` (`admin-order.schma.prisma:224`) | `custom_shafts_shipping.shipping_time` (`:745`)                                                         |
+| Delivered at          | `delivered_at` (`:241`)                          | `custom_shafts_shipping.delivered_at` (`:781`)                                                          |
+| Admin-to-partner type | `shipping_type2` (`:215`)                        | `custom_shafts_shipping.shipping_type` (`:714`)                                                         |
+| Lieferschein PDF      | —                                                | `custom_shafts_shipping.delivery_note` (`:766`) and `shipping_delivery_note.delivery_note_pdf` (`:818`) |
+| Lieferschein number   | `delivery_note_number` (`:300`)                  | `shipping_delivery_note.delivery_note_number` (`:819`)                                                  |
 
 **Current behaviour**
 
@@ -546,6 +551,70 @@ The customer name is the same kind of copy, already in 1.3.2 (`customerId`, `oth
 **Expected behaviour**
 
 `shipping_time`, `delivered_at`, and `shipping_type` live on `custom_shafts_shipping`. The Lieferschein PDF and its number live on `shipping_delivery_note`. The order keeps the link, not a second copy.
+
+## 1.15 Every shoe category is created into one table
+
+`custom_shafts` (`prisma/admin-order.schma.prisma:92–390`) is one model. The column `catagoary` (`:183`) uses `custom_shafts_catagoary` (`:449–462`): Halbprobenerstellung, Bettungserstellung, Massschafterstellung, Komplettfertigung, Bodenkonstruktion, Probenerstellung, Leistenerstellung, and `row`.
+
+Eleven `prisma.custom_shafts.create` calls write that model. Ten routes call a create directly. The clinical route does not insert a row itself. It calls four of those handlers, and the row still lands in `custom_shafts`.
+
+| Route                                                                  | Handler                              | Category written                                                                                                                                          |
+| ---------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/custom_shafts/create`                                        | `createTustomShafts`                 | Massschafterstellung or Komplettfertigung. When the body has a parent sample or a feedback id, the same request also inserts a Leistenerstellung child.   |
+| `POST /v1/custom_shafts/custom-bodenkonstruktion/create`               | `createCustomBodenkonstruktionOrder` | Bodenkonstruktion                                                                                                                                         |
+| `POST /v1/custom_shafts/probenerstellung/create`                       | `createProbenerstellungOrder`        | Probenerstellung                                                                                                                                          |
+| `POST /v1/custom_shafts/leistenerstellung/create`                      | `createLeistenerstellungOrder`       | Leistenerstellung                                                                                                                                         |
+| `POST /v1/custom_shafts/bettungserstellung/create`                     | `createBettungserstellungOrder`      | Bettungserstellung                                                                                                                                        |
+| `POST /v1/custom_shafts/feedback/create`                               | `createCustomShaftsFeedback`         | Leistenerstellung, only when the feedback category is `NO_ISSUE` and an active Halbprobenerstellung exists for that shoe                                  |
+| `POST /v1/massschuhe-order/admin-order/send-to-admin-1/:orderId`       | `sendToAdminOrder_1`                 | Halbprobenerstellung                                                                                                                                      |
+| `POST /v1/massschuhe-order/admin-order/send-to-admin-2-order/:orderId` | `sendToAdminOrder_2`                 | Massschafterstellung, or Komplettfertigung when both Massschaft JSON fields are present                                                                   |
+| `POST /v1/massschuhe-order/admin-order/send-to-admin-3-order/:orderId` | `sendToAdminOrder_3`                 | Bodenkonstruktion                                                                                                                                         |
+| `POST /v1/massschuhe-order/admin-order/halbprobenerstellung/create`    | `halbprobenerstellungOrder`          | Halbprobenerstellung                                                                                                                                      |
+| `POST /v4/clinical_assistant/order_components/create`                  | `createOrderComponents`              | No own insert. Halbprobenerstellung, Massschafterstellung, Komplettfertigung, Bodenkonstruktion, and Bettungserstellung are handed to the handlers above. |
+
+```mermaid
+flowchart TD
+  V4["POST /v4/clinical_assistant/order_components/create"]
+  V4 --> H
+  V4 --> M
+  V4 --> Bo
+  V4 --> Be
+  H["Halbprobenerstellung<br/>halbprobenerstellung/create<br/>send-to-admin-1"]
+  M["Massschafterstellung or Komplettfertigung<br/>POST /custom_shafts/create<br/>send-to-admin-2"]
+  Bo["Bodenkonstruktion<br/>custom-bodenkonstruktion/create<br/>send-to-admin-3"]
+  Be["Bettungserstellung<br/>bettungserstellung/create"]
+  P["Probenerstellung<br/>probenerstellung/create"]
+  L["Leistenerstellung<br/>leistenerstellung/create<br/>feedback/create when NO_ISSUE"]
+  M -.->|"same request, second row"| L
+  H --> T
+  M --> T
+  Bo --> T
+  Be --> T
+  P --> T
+  L --> T
+  T["custom_shafts<br/>one model for every category"]
+```
+
+**Current behaviour**
+
+- One row shape holds every category. Halbprobe JSON, Massschaft JSON, Boden JSON, invoices, 3D files, and shipping columns all sit on `custom_shafts`, and `catagoary` says which shoe part the row is.
+- `POST /v1/custom_shafts/create` can insert two rows: the shaft (`custom_shafts.controllers.ts:2470`, category at `:2352`) and a silent Leistenerstellung child (`:2014`, category at `:2018`).
+- `POST /v4/clinical_assistant/order_components/create` is the one clinical send. It calls `halbprobenerstellungOrder` (`order_components.controllers.ts:1662`), `createTustomShafts` (`:1711` and `:1857`), `createCustomBodenkonstruktionOrder` (`:1882`), and `createBettungserstellungOrder` (`:1902`). Probenerstellung and Leistenerstellung are not on that branch. Leistenerstellung still appears when `/custom_shafts/create` or feedback creates the child.
+- The enum value `row` has no `custom_shafts.create`.
+
+**Expected behaviour**
+
+One create writes one `custom_shafts` row. The category is the only switch. The clinical send uses that same create.
+
+**Code**
+
+- Model: `prisma/admin-order.schma.prisma:92–390`, enum `:449–462`
+- Creates: `module/v1/admin_order/custom_shafts.controllers.ts:2014`, `:2470`, `:3374`, `:3815`, `:4219`, `:4516`
+- Routes: `module/v1/admin_order/custom_shafts.routes.ts:82–98`, `:116–125`, `:132–140`, `:147–151`, `:169–174`
+- Massschuhe creates: `module/v1/massschuhe_order/admin_order/admin_order.controllers.ts:407`, `:1003`, `:1273`, `:1658`
+- Massschuhe routes: `module/v1/massschuhe_order/admin_order/admin_order.routes.ts:26–36`, `:43–54`, `:94–110`, `:117–125`
+- Feedback create: `module/v1/admin_order/feedback/feedback.controllers.ts:709`, route `feedback.routes.ts:29–34`
+- Clinical send: `module/v4/clinical_assistant/order_components/order_components.routes.ts:47`, handler calls at `order_components.controllers.ts:1662`, `:1711`, `:1857`, `:1882`, `:1902`
 
 ---
 
@@ -745,21 +814,21 @@ Other orders for this customer stay a separate query: `['sync-orders', customerI
 
 **Current behaviour**
 
-| What happens now | Function |
-| --- | --- |
-| Two loaders, and the first one wins | `loadPrefillData`, `loadHalbprobenerstellungPrefill` |
-| Each section copies the data once and then ignores the server | hydrate effect in `kopfdaten.tsx`, `sprengung-spitzenzugabe.tsx`, `leistentyp.tsx` |
+| What happens now                                               | Function                                                                            |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Two loaders, and the first one wins                            | `loadPrefillData`, `loadHalbprobenerstellungPrefill`                                |
+| Each section copies the data once and then ignores the server  | hydrate effect in `kopfdaten.tsx`, `sprengung-spitzenzugabe.tsx`, `leistentyp.tsx`  |
 | The price and the submit read refs, not the form the user sees | `handlePriceUpdate`, `getHalbprobenerstellungJson`, `buildFormData`, `validateForm` |
 
 **Recommended approach**
 
 The same approach as 1.8 and 2.5. TanStack Query holds the server order. Zustand holds the form while the user is typing: Kopfdaten, Sprengung, Leistentyp, `allgemeineOptionen`, and the price.
 
-| Data | Query key |
-| --- | --- |
-| The saved order | `['leisten-order', customShaftsId]` |
-| The short prefill, when there is no `customShaftsId` | `['leisten-prefill', orderId, customerId]` |
-| Other Leistenerstellung orders for this customer | `['sync-orders', customerId, 'Leistenerstellung']` |
+| Data                                                 | Query key                                          |
+| ---------------------------------------------------- | -------------------------------------------------- |
+| The saved order                                      | `['leisten-order', customShaftsId]`                |
+| The short prefill, when there is no `customShaftsId` | `['leisten-prefill', orderId, customerId]`         |
+| Other Leistenerstellung orders for this customer     | `['sync-orders', customerId, 'Leistenerstellung']` |
 
 One query result is written into that store. The price and the submit read the store. After `createLeistenkonfigurator` in `handleCompletionConfirm`, invalidate `['leisten-order', customShaftsId]`, so the next open shows what was saved.
 
@@ -770,4 +839,100 @@ flowchart LR
     Store --> Spr["Sprengung"]
     Store --> Typ["Leistentyp and price"]
     Save["handleCompletionConfirm"] -->|"invalidate leisten-order"| Q
+```
+
+---
+
+# Chapter 4: Bodenkonstruktion
+
+Route: `/dashboard/bodenkonstruktion`
+
+The screen is clear. One order is split across many `useState` values, and the saved order is copied into those states one by one. Until that copy finishes, the sole card and the price do not match the order. The same stale-data problem is on the catalogue (1.8), in Clinical Assistant (2.5), and on the Leistenkonfigurator (3.4).
+
+**Code**
+
+- Partner dashboard: `app/(dashboard)/dashboard/bodenkonstruktion/page.tsx`
+
+## 4.1 The sole card waits on a second list
+
+![Kunde and sole](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791800045209-zltv8j69-bodenkonstruktion-top.png)
+
+**Current behaviour**
+
+`applySelectedCustomer` writes the customer into state and into the URL (`customerId`, `customerName`). Picking a customer also runs `getSynchronousOrders` and can open the link modal before the form is filled.
+
+The saved order is loaded only inside `loadBodenkonstruktionPrefill`, and only when the URL has `customShaftsId` and `category=bodenkonstruktion`. It calls `getMassschuheOrder(customShaftsId)` and reads `bodenkonstruktion_json`.
+
+The sole is not taken from that JSON directly. The function reads `selected_sole.id`, then `useSoleData` has to finish its own list. `hydrateSelectedSoleFromJson` matches that id once the list arrives. `useSoleData` calls `getSoleCatalogueList` in a loop (up to 20 pages) on every open, with no cache. Until that list arrives, the card stays on "Keine Sohle ausgewählt" even though the order already has a sole. Red borders wait on `prefillFinished` and `soleStillHydrating`, so they can show before the sole name is there.
+
+**Expected behaviour**
+
+`['boden-order', customShaftsId]` and `['sole-catalog']` are both ready before the sole card renders. The sole id from the order is matched against the cached catalogue. The catalogue is not fetched again on every visit.
+
+Other Bodenkonstruktion orders for this customer use `['sync-orders', customerId, 'Bodenkonstruktion']` in place of the `getSynchronousOrders` effect. The delivery date uses `['delivery-date', 'Bodenkonstruktion']` in place of `useDeliveryDateByCategory`.
+
+## 4.2 The checklist is copied into many states
+
+![Checkliste](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791802179939-xjrxdnbn-bodenkonstruktion-checklist.png)
+
+**Current behaviour**
+
+Hinterkappe, Vorderkappe, Sohlenversteifung, Brandsohle, Rahmen, Absatz, and the rest are not one object. `loadBodenkonstruktionPrefill` writes each part with its own setter: `setSelected`, `setOptionInputs`, `setTextAreas`, `setSohlenversteifung`, `setSohlenaufbau`, `setRahmen`, `setVorderkappeSide`, `setHinterkappeSide`, `setHinterkappeMusterSide`, `setBrandsohleSide`, `setAbsatzFormConfigs`, `setSole4Thickness`, `setSole5Thickness`, `setSole6Thickness`.
+
+`runFormValidation` and `getBodenkonstruktionValidationErrors` must list every one of those states. If one setter is skipped, that card stays on the default (for example Hinterkappe "Muster liefern wir selbst") while the JSON had another value. `setGroup` only updates `selected`, so a change in Hinterkappe does not refresh Rahmen or the sole variant fields.
+
+**Expected behaviour**
+
+The checklist is not a second request. It is `form_data_v2` and `checklist_selected` inside the same `['boden-order', customShaftsId]` as 4.1. One write fills every card.
+
+## 4.3 The price stays on the base price
+
+![Preis](https://feetf1rst.s3.eu-central-1.amazonaws.com/docs/order-anatomy/frontend/1791800045209-zltv8j69-bodenkonstruktion-top.png)
+
+**Current behaviour**
+
+`useBodenkonstruktionCalculations` reads `selected`, `basePrice`, `rahmen`, the Hinterkappe, Brandsohle, and Vorderkappe sides, and `selectedSole`. It updates only after those states have been set. While the sole is still hydrating, **Weiter** still shows the base **194,99 €**.
+
+Three submit functions build the same payload:
+
+- `handleSaveDraft` calls `updateAdminOrderAfterDraft` or `createCustomBodenkonstruktion` with `is_draft=yes`.
+- `handleBindOrder` updates the draft, then calls `sendOrderToAdmin`.
+- `handleCreateOrder` calls `createCustomBodenkonstruktion`.
+
+All three call `prepareCustomBodenkonstruktionFormData`, which reads the split states again. `handleWeiterClick` and `handleRequestBindOrder` also write the price to `localStorage` (`currentBalance`) for the next page.
+
+**Expected behaviour**
+
+The price is calculated once from the saved order, including the sole. **Weiter** shows that price. After a successful save, invalidate `['boden-order', customShaftsId]`, so Balance and a later open read the saved JSON.
+
+## 4.4 One store for the Boden form
+
+**Current behaviour**
+
+| What happens now                                 | Function                                                  |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| The order JSON is copied into many setters       | `loadBodenkonstruktionPrefill`                            |
+| The sole list is fetched on every open           | `useSoleData`                                             |
+| Validation and the price read each slice         | `runFormValidation`, `useBodenkonstruktionCalculations`   |
+| Three submits rebuild FormData from those slices | `handleSaveDraft`, `handleBindOrder`, `handleCreateOrder` |
+
+**Recommended approach**
+
+The same approach as 1.8, 2.5, and 3.4. TanStack Query holds the server order and the sole catalogue. Zustand holds the form while the user is typing: customer, selected sole, checklist, Hinterkappe, Rahmen, Sohlenaufbau, and the price.
+
+| Data                                             | Query key                                          |
+| ------------------------------------------------ | -------------------------------------------------- |
+| The saved Boden order                            | `['boden-order', customShaftsId]`                  |
+| The sole catalogue                               | `['sole-catalog']`                                 |
+| Other Bodenkonstruktion orders for this customer | `['sync-orders', customerId, 'Bodenkonstruktion']` |
+| The delivery date                                | `['delivery-date', 'Bodenkonstruktion']`           |
+
+One `prepareCustomBodenkonstruktionFormData` reads that store. After `handleSaveDraft`, `handleBindOrder`, or `handleCreateOrder`, invalidate `['boden-order', customShaftsId]`.
+
+```mermaid
+flowchart LR
+    Order["boden-order"] --> Store["Zustand form"]
+    Soles["sole-catalog"] --> Store
+    Store --> Cards["Kunde, Sohle, Checkliste, Preis"]
+    Save["handleSaveDraft / handleBindOrder / handleCreateOrder"] -->|"invalidate boden-order"| Order
 ```
